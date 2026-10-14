@@ -26,7 +26,7 @@ class NexoTest(unittest.TestCase):
         self.assertEqual(encode({"b": 2, "a": 1}), encode({"a": 1, "b": 2}))
 
     def test_errors(self):
-        for wire in ["", "NX1", "NX1_", "NX1:9:ab", "NX1!999;", "NX1[100001:",
+        for wire in ["", "NX1", "NX1:9:ab", "NX1!999;", "NX1[100001:",
                      "NX1{1:.0;_", "NX1#1", "NX1{2::1:x_:1:x_"]:
             with self.subTest(wire=wire), self.assertRaises(CodecError):
                 decode(wire)

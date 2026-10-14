@@ -1,0 +1,17 @@
+[package]
+name = "nexo-python"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+publish = false
+license = "LicenseRef-NEXO-NC-ND-1.0"
+description = "Optional PyO3 adapter for the NEXO Rust core"
+
+[lib]
+name = "nexo_native"
+crate-type = ["cdylib"]
+
+[dependencies]
+nexo-core = { path = "../nexo-core" }
+pyo3 = { version = "0.23", features = ["extension-module"] }
+serde_json = "1.0"
