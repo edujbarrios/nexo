@@ -16,7 +16,8 @@ nexo/
 │   └── nexo-python/src/      optional PyO3 Rust-Python adapter
 ├── python/nexo/
 │   ├── __init__.py            stable package facade
-│   ├── codec.py               Python reference implementation
+│   ├── codec.py               stable public codec facade
+│   ├── _wire/                 internal reference codec submodules
 │   ├── agent.py               capability and token-cost strategy
 │   ├── native.py              optional accelerator adapter
 │   ├── tools.py               framework-agnostic function tools

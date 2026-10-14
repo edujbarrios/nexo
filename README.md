@@ -91,7 +91,7 @@ Image understanding still requires a proper multimodal model input.
 - `crates/nexo-core/src/`: Rust wire protocol with separate text, binary,
   reader, constants and error modules.
 - `crates/nexo-python/`: optional PyO3 binding layer.
-- `python/nexo/codec.py`: Python reference codec and small public facade.
+- `python/nexo/codec.py`: Python public facade with internal _wire/ codec modules.
 - `python/nexo/agent.py`: application-layer capability and cost strategy.
 - `python/nexo/native.py`: optional Rust extension adapter.
 - `python/nexo/tools.py`: agent function-tool adapter.
