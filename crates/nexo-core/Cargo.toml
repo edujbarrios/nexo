@@ -1,0 +1,12 @@
+[package]
+name = "nexo-core"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+license = "LicenseRef-NEXO-NC-ND-1.0"
+description = "NEXO/1 lossless agent message serialization core"
+repository = "https://github.com/edujbarrios/nexo"
+publish = false
+
+[dependencies]
+serde_json = "1.0"

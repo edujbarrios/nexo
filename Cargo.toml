@@ -1,0 +1,4 @@
+[workspace]
+resolver = "2"
+members = ["crates/nexo-core", "crates/nexo-python"]
+default-members = ["crates/nexo-core"]
