@@ -1,0 +1,76 @@
+[
+  {
+    "type": "result",
+    "task": 42,
+    "status": "ok",
+    "files": [
+      {
+        "name": "a.py",
+        "changed": true
+      },
+      {
+        "name": "b.py",
+        "changed": false
+      }
+    ]
+  },
+  {
+    "type": "request",
+    "agent": "planner",
+    "task": 105,
+    "input": {
+      "message": "Review the tests and summarize failures",
+      "files": [
+        "tests/test_codec.py",
+        "Cargo.toml"
+      ]
+    }
+  },
+  {
+    "type": "error",
+    "task": 44,
+    "status": "failed",
+    "error": {
+      "name": "TimeoutError",
+      "message": "tool did not respond"
+    }
+  },
+  {
+    "type": "result",
+    "task": 51,
+    "status": "ok",
+    "data": {
+      "output": "build finished",
+      "tokens": 2080,
+      "cost": 0.002
+    }
+  },
+  {
+    "type": "request",
+    "role": "assistant",
+    "tool": "shell",
+    "args": {
+      "command": "python -m pytest -q",
+      "timeout": 30
+    }
+  },
+  {
+    "type": "result",
+    "status": "success",
+    "message": "agent finished",
+    "metadata": {
+      "model": "example",
+      "version": "v1",
+      "timestamp": "2026-10-15"
+    }
+  },
+  {
+    "type": "image",
+    "data": {
+      "ref": "sha256:abcd",
+      "sha256": "abcd",
+      "size": 23456,
+      "mime": "image/png"
+    }
+  }
+]

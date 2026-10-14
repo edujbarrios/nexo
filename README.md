@@ -68,6 +68,14 @@ CLI: `python -m nexo encode`, `python -m nexo decode` and
 `python -m nexo bench` use stdin and stdout. For agent function calling,
 `nexo.TOOL_SCHEMAS` provides framework-agnostic tool definitions.
 
+
+## Reproducible baseline benchmarks
+
+Run `python benchmarks/run.py` to compare payload byte sizes against compact
+JSON. Install the optional tokenizer extra, then run
+`python benchmarks/run.py --model gpt-4o` for tokenizer-specific payload
+counts. Results may show NEXO losing; they exclude orchestration overhead.
+
 ## Images and files
 
 Encode small **references** to binary objects rather than textifying all their
