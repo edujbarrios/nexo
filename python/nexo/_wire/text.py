@@ -1,4 +1,5 @@
 """Text NEXO/1 codec; UTF-8 length-prefixed strings."""
+import math
 from .constants import KEY_IDS, VALUE_IDS, KEYS, VALUES, MAX_DEPTH, MAX_ITEMS, MIN_I64, MAX_I64
 from .errors import CodecError
 
