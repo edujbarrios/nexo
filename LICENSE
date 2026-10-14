@@ -1,29 +1,67 @@
-BSD 3-Clause License
+NEXO SOURCE-AVAILABLE ATTRIBUTION–NONCOMMERCIAL–NO-DERIVATIVES LICENSE
+Version 1.0 — 15 October 2026
 
-Copyright (c) 2026, Eduardo J. Barrios
-All rights reserved.
+Copyright (c) 2026 Eduardo J. Barrios. All rights reserved.
+Project: NEXO — https://github.com/edujbarrios/nexo
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
+IMPORTANT: This is a restrictive, source-available software license, NOT an
+OSI-approved open-source license. It has not been independently legal-reviewed.
 
-1. Redistributions of source code must retain the above copyright notice,
-   this list of conditions and the following disclaimer.
+1. GRANT OF PERMISSION
+Subject to all conditions below, the copyright holder grants each recipient a
+non-exclusive, worldwide, royalty-free, revocable-on-breach permission to:
+(a) view, download, and examine the unmodified NEXO source code;
+(b) run and compile the unmodified NEXO software for personal, educational,
+    academic, nonprofit, or independent research purposes only, provided such
+    use is noncommercial;
+(c) copy and redistribute verbatim, unmodified copies of NEXO, including
+    binaries built from unmodified source, for noncommercial purposes only,
+    with this license, the copyright notice, and attribution intact; and
+(d) quote, discuss, review, or cite NEXO with reasonable attribution.
+Using NEXO as a dependency through its published API, and writing separate
+software that calls that API, does not by itself modify NEXO. Such use of NEXO
+must still be noncommercial. The separate software is not automatically
+subject to this license.
 
-2. Redistributions in binary form must reproduce the above copyright notice,
-   this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution.
+2. ATTRIBUTION
+Any permitted redistribution must prominently preserve:
+" NEXO — Copyright (c) 2026 Eduardo J. Barrios "
+along with the repository URL and the full text of this license.
+When citing NEXO in publications or documentation, credit Eduardo J. Barrios
+and link to https://github.com/edujbarrios/nexo where practicable.
 
-3. Neither the name of the copyright holder nor the names of its
-   contributors may be used to endorse or promote products derived from
-   this software without specific prior written permission.
+3. PROHIBITED ACTIVITIES
+Without the copyright holder's prior explicit written authorization, you may
+NOT:
+(a) modify, adapt, translate, port, patch, or create derivative versions of
+    NEXO source code or binaries, or publish a modified fork;
+(b) use NEXO for commercial purposes, including in a for-profit product,
+    paid service, commercial infrastructure, or in connection with commercial
+    advantage or monetary compensation, whether directly or indirectly;
+(c) distribute, sublicense, or sell NEXO under terms that contradict this
+    license; or
+(d) remove or obscure notices of copyright, attribution, or licensing.
+No trademark or patent rights are granted by this license.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+4. OTHER RIGHTS AND THIRD-PARTY COMPONENTS
+This license does not limit rights that applicable law grants independently,
+such as lawful quotation or mandatory statutory exceptions. Third-party
+dependencies retain their own respective licenses. The copyright holder
+may license NEXO separately on different terms, including for commercial use
+or modifications by explicit written permission.
+
+5. TERMINATION
+Permission under this license ends automatically if you violate its terms.
+Cease any unauthorized use and distribution. Rights required by applicable
+law remain unaffected.
+
+6. DISCLAIMER
+NEXO IS PROVIDED "AS IS", WITHOUT WARRANTIES OF ANY KIND, EXPRESS OR
+IMPLIED, TO THE MAXIMUM EXTENT PERMITTED BY LAW. THE COPYRIGHT HOLDER
+SHALL NOT BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING
+FROM USE OF THE SOFTWARE, TO THE MAXIMUM EXTENT PERMITTED BY LAW.
+
+7. PREVIOUS RELEASES
+This license applies to code distributed under this license. It does not
+retroactively withdraw permissions already granted to copies previously
+obtained under a valid earlier license.

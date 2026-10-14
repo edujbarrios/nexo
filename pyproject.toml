@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,7 +8,8 @@ version = "0.1.0"
 description = "Agent-first reversible compact messages with a Rust core"
 readme = "README.md"
 requires-python = ">=3.9"
-license = "BSD-3-Clause"
+license = "LicenseRef-NEXO-NC-ND-1.0"
+license-files = ["LICENSE"]
 authors = [{name = "Eduardo J. Barrios"}]
 keywords = ["agents", "llm", "serialization", "token-efficiency"]
 dependencies = []
