@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+# Rust
+target/
+Cargo.lock
+# Native wheels
+*.whl
+*.so
+*.pyd
+# Editors
+.idea/
+.vscode/
+.DS_Store

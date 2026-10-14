@@ -20,6 +20,7 @@ jobs:
       - run: python -m compileall -q python/nexo
       - run: python examples/agent_pair.py
       - run: python examples/attachments.py
+      - run: python benchmarks/run.py
   rust:
     runs-on: ubuntu-latest
     steps:
