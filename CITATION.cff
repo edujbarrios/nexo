@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "Please cite NEXO when referring to this project."
+title: "NEXO: Agent-first Compact Message Codec"
+type: software
+authors:
+  - family-names: Barrios
+    given-names: Eduardo J.
+repository-code: "https://github.com/edujbarrios/nexo"
+license-url: "https://github.com/edujbarrios/nexo/blob/main/LICENSE"
+version: "0.1.0"
