@@ -24,14 +24,18 @@ NEXO remains experimental; items below are not promises or release claims.
    Deployment performance and real-world benefits remain unverified.
 4. ✅ Initial optional JSON/NEXO/TOON benchmark harness, including
    round-trip verification, envelope measurements and negative results.
-5. Collect **real** anonymized agent communication corpora (only with
+5. ✅ Capture a reproducible tokenizer-specific baseline on the 9-message
+   synthetic corpus in [benchmark results](BENCHMARKS.md). NEXO/1 Text
+   currently loses tokenizer tokens against compact JSON in this test.
+6. Collect **real** anonymized agent communication corpora (only with
    permission); rerun model-specific tokenizers and publish results.
-6. Include actual orchestration instructions, provider/tool framing and
+7. Include actual orchestration instructions, provider/tool framing and
    runtime billing in end-to-end token cost claims.
-7. ✅ Add shared adversarial wire fixtures, strict varint decoding and
+8. ✅ Add shared adversarial wire fixtures, strict varint decoding and
    seeded byte-mutation tests. Next: libFuzzer/cargo-fuzz coverage and a
    secure remote blob-store adapter.
-8. Consider version-negotiated custom schema dictionaries if results justify.
+9. Study a tokenizer-oriented NEXO/2 text grammar or custom schema
+   dictionaries **only** if independent measurements justify a version bump.
 
 ## Non-goals for v1
 
