@@ -37,6 +37,15 @@ def _invalid_constant(_):
     raise CodecError("non-finite transport JSON constant")
 
 
+def _unique_pairs(pairs):
+    obj = {}
+    for key, value in pairs:
+        if key in obj:
+            raise CodecError("duplicate transport JSON key")
+        obj[key] = value
+    return obj
+
+
 class SocketFramedTransport:
     """Framing for an already-connected TLS socket (or opted-in local socket).
 
@@ -133,7 +142,10 @@ class SocketFramedTransport:
     def _recv_json(self, kind):
         raw = self._read(kind)
         try:
-            value = json.loads(raw.decode("utf-8"), parse_constant=_invalid_constant)
+            value = json.loads(
+                raw.decode("utf-8"), parse_constant=_invalid_constant,
+                object_pairs_hook=_unique_pairs,
+            )
         except (ValueError, UnicodeError, RecursionError) as exc:
             raise CodecError("invalid transport JSON frame") from exc
         if not isinstance(value, dict):
