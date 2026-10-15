@@ -27,6 +27,7 @@ nexo/
 │   ├── plaintext.py           explicit string-message adapter
 │   ├── transfer.py            separate chunked NXI/1 attachment transport
 │   ├── transport.py           bounded NXF/1 socket/TLS host-side adapter
+│   ├── disk_transfer.py       incremental hash + atomic file attachment sink
 │   └── __main__.py            CLI adapter
 ├── bindings/                  separate optional maturin build
 ├── tests/                     Python black-box and golden tests

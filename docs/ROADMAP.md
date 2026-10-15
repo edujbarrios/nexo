@@ -19,6 +19,8 @@ NEXO remains experimental; items below are not promises or release claims.
   text/message/image session (host authorization and server deployment external).
 - Directional capability checks for send and receive, malformed-frame and
   duplicate-key rejection tests on local sockets.
+- Streaming file-source / disk-sink NXI/1 adapters to avoid loading the
+  entire image into RAM; atomic publication after SHA-256 verification.
 
 ## Next validation milestones
 
@@ -41,8 +43,8 @@ NEXO remains experimental; items below are not promises or release claims.
 8. ✅ Add shared adversarial wire fixtures, strict varint decoding and
    seeded byte-mutation tests. Added NXI/1 malformed/duplicate/truncated
    media-packet coverage. Next: libFuzzer/cargo-fuzz coverage and a
-   server-side authenticated transport integration, resumable transfers and
-   true streaming-to-disk memory bounds.
+   server-side authenticated transport integration and resumable transfers
+   (streaming-to-disk memory bounds are now supported).
 9. Study a tokenizer-oriented NEXO/2 text grammar or custom schema
    dictionaries **only** if independent measurements justify a version bump.
 
