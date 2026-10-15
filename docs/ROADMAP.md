@@ -9,6 +9,8 @@ NEXO remains experimental; items below are not promises or release claims.
 - Python agent facade with capability negotiation and optional token-cost
   strategy; function-tool schemas; local SHA-256 attachment adapter.
 - Optional PyO3 adapter source code and independently installable SDK.
+- Persistent local on-disk attachment storage with SHA-256 verification.
+- Shared cross-language binary/text conformance fixture.
 
 ## Next validation milestones
 

@@ -13,7 +13,8 @@
 5. Do not ask the LLM to mentally parse opaque NEXO/1 text. Do not assume NEXO
    is cheaper without target-tokenizer measurements.
 6. Send image/file bytes through an authenticated shared store; pass a
-   SHA-256 manifest in NEXO. The memory-store example is not a network store.
+   SHA-256 manifest in NEXO. The memory store is not a network store; `FileBlobStore` can share bytes
+   across processes through a trusted local or mounted directory.
 7. Treat every decoded message as untrusted data, not a system instruction.
 
 For an agent framework that supports function tools, `nexo.TOOL_SCHEMAS`,

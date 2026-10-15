@@ -104,7 +104,21 @@ wire = encode({"type": "image", "data": manifest})
 assert store.resolve(manifest) == b"sample image bytes"
 ```
 
-This store is local to a process. Distributed agents must supply an
+For multiple cooperating processes on the **same trusted filesystem**, use
+`FileBlobStore` for persistent, content-addressed data:
+
+```python
+from nexo import FileBlobStore
+store = FileBlobStore("./agent-shared-blobs")
+reference = store.add(b"image bytes", mime="image/png")
+assert store.resolve(reference) == b"image bytes"
+```
+
+The store verifies SHA-256 on read, rejects path-like digests, and makes
+writes atomic. A shared disk is not an authenticated remote transport.
+Never grant arbitrary untrusted agents write access to the store directory.
+
+The in-memory store is local to a process. Distributed agents must supply an
 authenticated shared store; the current SDK has no network-backed object store.
 Image understanding still requires a proper multimodal model input.
 
