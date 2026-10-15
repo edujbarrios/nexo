@@ -19,7 +19,9 @@ NEXO remains experimental; items below are not promises or release claims.
    cross-language randomized parity job is now included, pending CI validation.
 2. Python/Rust behavioral and numerical parity tests for complex values,
    including exact Python `bytes` returns from PyO3 bindings.
-3. Build an optional native wheel and benchmark the speed against stdlib.
+3. ✅ Build a separate native wheel in CI and add an opt-in local throughput
+   benchmark against stdlib JSON and the Python NEXO reference codec.
+   Deployment performance and real-world benefits remain unverified.
 4. ✅ Initial optional JSON/NEXO/TOON benchmark harness, including
    round-trip verification, envelope measurements and negative results.
 5. Collect **real** anonymized agent communication corpora (only with

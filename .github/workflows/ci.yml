@@ -50,6 +50,7 @@ jobs:
       - run: |
           python -c "import nexo_native; assert nexo_native.encode_text({'task': 1})"
       - run: python -m pytest -q tests/test_native.py
+      - run: python benchmarks/speed.py --iterations 100 --repeats 2
 
   benchmark-toon:
     runs-on: ubuntu-latest

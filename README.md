@@ -207,6 +207,17 @@ payload/envelope estimates and a clear distinction between supported and
 unsupported TOON inputs. Full provider framing and model inference costs are
 outside the local benchmark.
 
+To compare **local serialization throughput** for standard-library JSON,
+the Python reference codec, and (if installed) the optional Rust wheel:
+
+```sh
+python benchmarks/speed.py --iterations 1000 --repeats 5
+```
+
+The throughput script checks decoding correctness and prints measured
+operations per second with environment metadata. Timings are machine- and
+workload-specific, **not** LLM token-savings or agent-end-to-end results.
+
 ## Images and files
 
 Encode small **references** to binary objects rather than textifying all their
