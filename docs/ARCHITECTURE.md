@@ -19,9 +19,11 @@ nexo/
 │   ├── codec.py               stable public codec facade
 │   ├── _wire/                 internal reference codec submodules
 │   ├── agent.py               capability and token-cost strategy
+│   ├── negotiation.py         versioned pure capability handshake
 │   ├── native.py              optional accelerator adapter
 │   ├── tools.py               framework-agnostic function tools
-│   ├── attachments.py         content-addressed local store
+│   ├── attachments.py         shared manifest/integrity logic + memory store
+│   ├── filesystem.py          persistent local blob adapter
 │   └── __main__.py            CLI adapter
 ├── bindings/                  separate optional maturin build
 ├── tests/                     Python black-box and golden tests

@@ -20,7 +20,9 @@ jobs:
       - run: python -m compileall -q python/nexo
       - run: python examples/agent_pair.py
       - run: python examples/attachments.py
+      - run: python examples/handshake.py
       - run: python benchmarks/run.py
+      - run: echo '{"status":"ok","task":42,"type":"result"}' | python -m nexo inspect
   rust:
     runs-on: ubuntu-latest
     steps:
@@ -28,3 +30,41 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo test -p nexo-core
       - run: cargo check -p nexo-python
+
+  native-wheel:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@stable
+      - run: python -m pip install -e ".[dev]" maturin
+      - run: maturin build --release --manifest-path crates/nexo-python/Cargo.toml -o dist
+      - run: python -m pip install dist/*.whl
+      - run: python -c "import nexo_native; assert nexo_native.encode_text({'task': 1})"
+      - run: python -m pytest -q tests/test_native.py
+
+  benchmark-toon:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e . toon-format
+      - run: python benchmarks/run.py --toon
+
+  rust-python-parity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@stable
+      - run: python -m pip install -e ".[dev]"
+      - run: cargo build -p nexo-core --bin nexo-inspect
+      - run: python -m pytest -q tests/test_cross_language.py
+        env:
+          NEXO_RUST_INSPECT: target/debug/nexo-inspect

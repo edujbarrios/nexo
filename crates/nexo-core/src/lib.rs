@@ -82,6 +82,24 @@ mod tests {
         }
     }
     #[test]
+    fn shared_python_rust_vectors() {
+        let vectors: Value =
+            serde_json::from_str(include_str!("../../../fixtures/conformance.json")).unwrap();
+        for vector in vectors.as_array().unwrap() {
+            let value = &vector["value"];
+            let text = vector["text"].as_str().unwrap();
+            let hex = vector["binary_hex"].as_str().unwrap();
+            let bytes: Vec<u8> = hex.as_bytes().chunks_exact(2).map(|chunk| {
+                u8::from_str_radix(std::str::from_utf8(chunk).unwrap(), 16).unwrap()
+            }).collect();
+            assert_eq!(encode_text(value).unwrap(), text, "{}", vector["label"]);
+            assert_eq!(encode_binary(value).unwrap(), bytes, "{}", vector["label"]);
+            assert_eq!(decode(text.as_bytes()).unwrap(), *value);
+            assert_eq!(decode(&bytes).unwrap(), *value);
+        }
+    }
+
+    #[test]
     fn signed_integer_limits() {
         let min = json!(i64::MIN);
         let max = json!(i64::MAX);

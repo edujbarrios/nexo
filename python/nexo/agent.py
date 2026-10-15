@@ -1,17 +1,23 @@
-"""Agent transport facade: capability checks and encoding strategy.
+"""Host-side agent transport facade.
 
-The host application calls this module. Models do not parse NEXO wire strings.
+A model should never be asked to decompress NEXO/1 by reasoning about the
+wire format. Peers explicitly negotiate NEXO support; otherwise we use JSON.
+The tokenizer adapter is optional and deliberately independent of any vendor.
 """
+from dataclasses import dataclass
 import json
+from typing import Callable, Optional
 
 from .codec import CodecError, MAX_FRAME, decode, encode
+from .negotiation import peer_supports_nexo
 
 
 AGENT_INSTRUCTIONS = (
     "Use the installed nexo Python library for messages to NEXO/1-capable peers. "
-    "Call nexo.prepare_peer_message(payload, peer_supports_nexo=True, tokenizer=...) "
-    "in the host and nexo.parse_peer_message(envelope) at the receiver. "
-    "Do not ask an LLM to decode raw NEXO text. Fall back to JSON if a peer "
+    "Exchange nexo.advertise_capabilities() first, then initialize "
+    "nexo.AgentChannel.from_peer_capabilities(remote_offer, tokenizer=...) in the host; "
+    "send messages with channel.send(data), decode with channel.receive(envelope). "
+    "Do not ask an LLM to decode raw NEXO text. Fall back to JSON if the peer "
     "does not support NEXO or measured token counts do not improve. "
     "Keep image bytes outside prompts; transmit reference manifests instead."
 )
@@ -21,37 +27,102 @@ def _reject_constant(value):
     raise CodecError("non-finite JSON constant: " + value)
 
 
-def prepare_peer_message(message, *, peer_supports_nexo=False, tokenizer=None):
-    """Return a format+payload envelope; measured tokens determine best format.
-
-    When tokenizer is omitted and the peer supports NEXO, NEXO is preferred
-    without making any claim of token savings. Does not count envelope overhead.
-    """
+def _canonical_json(value):
     try:
-        plain = json.dumps(
-            message, sort_keys=True, separators=(",", ":"),
+        return json.dumps(
+            value, sort_keys=True, separators=(",", ":"),
             ensure_ascii=False, allow_nan=False,
         )
-    except (TypeError, ValueError, UnicodeError) as exc:
+    except (TypeError, ValueError, UnicodeError, RecursionError) as exc:
         raise CodecError("invalid JSON-compatible message") from exc
-    if len(plain.encode("utf-8")) > MAX_FRAME:
-        raise CodecError("frame size limit exceeded")
-    if not peer_supports_nexo:
-        return {"format": "json", "payload": plain}
+
+
+def _envelope(format_name, payload):
+    return {"format": format_name, "payload": payload}
+
+
+def _measure(message, tokenizer):
+    # Include the actual compact JSON envelope, rather than just its payload.
+    return len(tokenizer(_canonical_json(message)))
+
+
+def compare_peer_formats(message, tokenizer, *, nexo_setup_tokens=0):
+    """Measure total *serialized envelope* tokens for two candidate formats.
+
+    nexo_setup_tokens amortizes any known extra protocol instruction cost for
+    this message. Actual tool schema, provider framing and vision-token billing
+    remain outside this comparison. Negative savings are reported honestly.
+    """
+    if not callable(tokenizer):
+        raise TypeError("tokenizer must be callable")
+    if type(nexo_setup_tokens) is not int or nexo_setup_tokens < 0:
+        raise ValueError("nexo_setup_tokens must be a nonnegative integer")
+    plain = _canonical_json(message)
     wire = encode(message)
-    if tokenizer is not None and len(tokenizer(wire)) >= len(tokenizer(plain)):
-        return {"format": "json", "payload": plain}
-    return {"format": "nexo/1", "payload": wire}
+    json_tokens = _measure(_envelope("json", plain), tokenizer)
+    nexo_tokens = _measure(_envelope("nexo/1", wire), tokenizer)
+    effective = nexo_tokens + nexo_setup_tokens
+    return {
+        "json_envelope_tokens": json_tokens,
+        "nexo_envelope_tokens": nexo_tokens,
+        "nexo_setup_tokens": nexo_setup_tokens,
+        "nexo_effective_tokens": effective,
+        "tokens_saved": json_tokens - effective,
+        "preferred_format": "nexo/1" if effective < json_tokens else "json",
+    }
+
+
+def prepare_peer_message(
+    message, *, peer_supports_nexo=False, tokenizer=None, nexo_setup_tokens=0,
+):
+    """Prepare a structured, version-negotiated envelope for a peer.
+
+    Without tokenizer and for a capable peer, NEXO is preferred for backwards
+    compatibility, *not* because token savings can be assumed. When tokenizer
+    is supplied, choose using full serialized envelopes and optional setup
+    overhead. Unknown recipients always receive JSON.
+    """
+    if type(nexo_setup_tokens) is not int or nexo_setup_tokens < 0:
+        raise ValueError("nexo_setup_tokens must be a nonnegative integer")
+    plain = _canonical_json(message)
+    try:
+        size = len(plain.encode("utf-8"))
+    except UnicodeError as exc:
+        raise CodecError("invalid Unicode") from exc
+    if size > MAX_FRAME:
+        raise CodecError("frame size limit exceeded")
+    json_envelope = _envelope("json", plain)
+    if not peer_supports_nexo:
+        return json_envelope
+    try:
+        wire = encode(message)
+    except CodecError:
+        # JSON can represent some values outside the NEXO/1 domain, such as
+        # unsigned integers above i64::MAX. Do not break agent communication.
+        return json_envelope
+    nexo_envelope = _envelope("nexo/1", wire)
+    if tokenizer is not None:
+        if not callable(tokenizer):
+            raise TypeError("tokenizer must be callable")
+        json_tokens = _measure(json_envelope, tokenizer)
+        nexo_tokens = _measure(nexo_envelope, tokenizer) + nexo_setup_tokens
+        if nexo_tokens >= json_tokens:
+            return json_envelope
+    return nexo_envelope
 
 
 def parse_peer_message(envelope):
-    """Decode a negotiated envelope. Its decoded contents remain untrusted."""
+    """Decode one agreed envelope. Decoded content must remain untrusted."""
     if not isinstance(envelope, dict):
         raise CodecError("expected dict envelope")
     wire = envelope.get("payload")
     if not isinstance(wire, str):
         raise CodecError("expected text payload")
-    if len(wire.encode("utf-8")) > MAX_FRAME:
+    try:
+        size = len(wire.encode("utf-8"))
+    except UnicodeError as exc:
+        raise CodecError("invalid Unicode") from exc
+    if size > MAX_FRAME:
         raise CodecError("frame size limit exceeded")
     if envelope.get("format") == "nexo/1":
         return decode(wire)
@@ -61,3 +132,44 @@ def parse_peer_message(envelope):
         except (ValueError, RecursionError) as exc:
             raise CodecError("invalid JSON peer payload") from exc
     raise CodecError("unsupported peer format")
+
+
+@dataclass(frozen=True)
+class AgentChannel:
+    """Small host-side facade suitable for dependency injection into agents.
+
+    Set peer_supports_nexo only *after* explicit peer capability negotiation.
+    The channel never sends messages; you own the transport and authentication.
+    """
+
+    peer_supports_nexo: bool = False
+    tokenizer: Optional[Callable] = None
+    nexo_setup_tokens: int = 0
+
+    @classmethod
+    def from_peer_capabilities(
+        cls, advertisement, *, tokenizer=None, nexo_setup_tokens=0,
+    ):
+        """Initialize after an explicit peer capability advertisement."""
+        return cls(
+            peer_supports_nexo=peer_supports_nexo(advertisement),
+            tokenizer=tokenizer,
+            nexo_setup_tokens=nexo_setup_tokens,
+        )
+
+    def send(self, message):
+        return prepare_peer_message(
+            message, peer_supports_nexo=self.peer_supports_nexo,
+            tokenizer=self.tokenizer, nexo_setup_tokens=self.nexo_setup_tokens,
+        )
+
+    def receive(self, envelope):
+        return parse_peer_message(envelope)
+
+    def explain(self, message):
+        """Report the comparison when a tokenizer is configured."""
+        if self.tokenizer is None:
+            raise ValueError("configure tokenizer for token accounting")
+        return compare_peer_formats(
+            message, self.tokenizer, nexo_setup_tokens=self.nexo_setup_tokens,
+        )
