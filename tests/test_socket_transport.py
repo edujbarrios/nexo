@@ -113,10 +113,14 @@ class TestSocketTransport(unittest.TestCase):
         with a, b:
             _negotiate_pair(a, b, allow_attachments=False)
             self.assertFalse(b.channel.peer_supports_attachments)
+            # A did not advertise receiving, so B cannot send TO A.
             with self.assertRaises(CodecError):
-                a.send_image(PNG)
+                b.send_image(PNG)
             with self.assertRaises(CodecError):
-                b.receive_image()
+                a.receive_image()
+            # But B did advertise receiving, so A MAY send TO B.
+            a.send_image(PNG)
+            self.assertEqual(b.receive_image().data, PNG)
 
     def test_repeated_handshake_rejected(self):
         a, b = _sessions()
