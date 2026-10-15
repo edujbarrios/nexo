@@ -5,6 +5,7 @@ For remote agents, use an authenticated, encrypted TLS/WebSocket/gRPC channel.
 NEXO itself provides framing and SHA-256 verification, NOT encryption.
 """
 import base64
+from contextlib import closing
 import socket
 import struct
 
@@ -42,7 +43,8 @@ def incoming(sock):
         yield take_exact(sock, size)
 
 
-with socket.socketpair() as (tx, rx):
+tx, rx = socket.socketpair()
+with closing(tx), closing(rx):
     for packet in sender.send_image(png_bytes, mime="image/png", chunk_size=20):
         tx.sendall(struct.pack(">I", len(packet)) + packet)
     tx.shutdown(socket.SHUT_WR)
