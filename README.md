@@ -267,7 +267,8 @@ echo '{"status":"ok","task":42,"type":"result"}' | python -m nexo inspect
 The inspection includes hex output for the binary wire, UTF-8 text mode,
 and a reversible roundtrip check. See the byte-by-byte breakdown in
 [Protocol](docs/PROTOCOL.md). For agent function calling,
-`nexo.TOOL_SCHEMAS` provides framework-agnostic tool definitions.
+`nexo.TOOL_SCHEMAS` provides framework-agnostic tool definitions, including
+`nexo_encode_text` / `nexo_decode_text` for plain-text messages.
 
 
 ## Reproducible benchmarks

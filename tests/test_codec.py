@@ -53,7 +53,9 @@ class NexoTest(unittest.TestCase):
     def test_tools(self):
         value = {"type": "result", "status": "ok"}
         self.assertEqual(decode_message(encode_message(value)), value)
-        self.assertEqual(len(TOOL_SCHEMAS), 2)
+        self.assertEqual(len(TOOL_SCHEMAS), 4)
+        from nexo import encode_text_message, decode_text_message
+        self.assertEqual(decode_text_message(encode_text_message("Hello agent")), "Hello agent")
 
     def test_attachments(self):
         store = MemoryBlobStore()

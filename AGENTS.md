@@ -28,6 +28,8 @@
 
 For an agent framework that supports function tools, `nexo.TOOL_SCHEMAS`,
 `nexo.encode_message` and `nexo.decode_message` provide an integration path.
+Plain-text function tools are `nexo_encode_text` and `nexo_decode_text`; their
+Python handlers are `nexo.encode_text_message` and `nexo.decode_text_message`.
 
 ## Repo architecture rules
 
