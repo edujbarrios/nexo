@@ -10,7 +10,6 @@ for the Trusted Publisher OIDC permissions or GitHub environment protection.
 import os
 from pathlib import Path
 import re
-import tomllib
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
@@ -34,6 +33,7 @@ def publication_target(event, ref, selected_index):
 
 
 def package_version(root):
+    import tomllib  # publishing job runs Python 3.12; library supports 3.9
     root = Path(root)
     import_name = root / "python/nexo/__init__.py"
     project = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))["project"]
