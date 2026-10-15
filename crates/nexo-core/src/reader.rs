@@ -55,7 +55,11 @@ impl<'a> Reader<'a> {
             let byte = self.byte()?;
             if i == 9 && byte > 1 { return fail("varint overflow"); }
             value |= ((byte & 0x7f) as u64) << (i * 7);
-            if byte < 128 { return Ok(value); }
+            if byte < 128 {
+                // Reject redundant high-order zero groups: one integer, one wire form.
+                if i > 0 && byte == 0 { return fail("non-canonical varint"); }
+                return Ok(value);
+            }
         }
         fail("varint overflow")
     }

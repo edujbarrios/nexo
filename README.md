@@ -205,7 +205,19 @@ python benchmarks/run.py --model gpt-4o --toon --nexo-setup-tokens 10
 Reports include negative results, raw byte sizes, tokenizer-specific
 payload/envelope estimates and a clear distinction between supported and
 unsupported TOON inputs. Full provider framing and model inference costs are
-outside the local benchmark.
+outside the local benchmark. See [measured benchmark results](docs/BENCHMARKS.md)
+for a reproducible comparison that includes cases where NEXO is worse.
+
+To compare **local serialization throughput** for standard-library JSON,
+the Python reference codec, and (if installed) the optional Rust wheel:
+
+```sh
+python benchmarks/speed.py --iterations 1000 --repeats 5
+```
+
+The throughput script checks decoding correctness and prints measured
+operations per second with environment metadata. Timings are machine- and
+workload-specific, **not** LLM token-savings or agent-end-to-end results.
 
 ## Images and files
 

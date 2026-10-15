@@ -1,0 +1,90 @@
+[
+  {
+    "name": "unknown-binary-version",
+    "binary_hex": "4e580200"
+  },
+  {
+    "name": "unknown-text-version",
+    "text": "NX2_"
+  },
+  {
+    "name": "truncated-varint",
+    "binary_hex": "4e58010380"
+  },
+  {
+    "name": "noncanonical-zero-varint",
+    "binary_hex": "4e5801038000"
+  },
+  {
+    "name": "noncanonical-key-code",
+    "binary_hex": "4e5801070100800000"
+  },
+  {
+    "name": "varint-u64-overflow",
+    "binary_hex": "4e580103ffffffffffffffffff02"
+  },
+  {
+    "name": "nonfinite-infinity",
+    "binary_hex": "4e5801047ff0000000000000"
+  },
+  {
+    "name": "invalid-utf8",
+    "binary_hex": "4e58010502c328"
+  },
+  {
+    "name": "duplicate-binary-key",
+    "binary_hex": "4e580107020002080100020801"
+  },
+  {
+    "name": "unknown-value-dictionary-id",
+    "binary_hex": "4e5801087f"
+  },
+  {
+    "name": "too-many-array-items",
+    "binary_hex": "4e580106a18d06"
+  },
+  {
+    "name": "trailing-binary-data",
+    "binary_hex": "4e58010000"
+  },
+  {
+    "name": "truncated-binary-float",
+    "binary_hex": "4e5801040000"
+  },
+  {
+    "name": "truncated-text-string",
+    "text": "NX1:3:ab"
+  },
+  {
+    "name": "invalid-text-integer",
+    "text": "NX1#1.5;"
+  },
+  {
+    "name": "out-of-range-text-integer",
+    "text": "NX1#9223372036854775808;"
+  },
+  {
+    "name": "nonfinite-text-float",
+    "text": "NX1^Infinity;"
+  },
+  {
+    "name": "duplicate-text-key",
+    "text": "NX1{2::1:a#1;:1:a#2;"
+  },
+  {
+    "name": "unknown-text-value-code",
+    "text": "NX1!999;"
+  },
+  {
+    "name": "too-many-text-items",
+    "text": "NX1[100001:"
+  },
+  {
+    "name": "trailing-text-data",
+    "text": "NX1__"
+  },
+  {
+    "name": "text-malformed-key-tag",
+    "text": "NX1{1:#1;_"
+  }
+]

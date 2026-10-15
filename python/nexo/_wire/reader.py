@@ -61,6 +61,9 @@ class _Reader:
                 raise CodecError("varint overflow")
             n |= (b & 127) << shift
             if b < 128:
+                # V1 varints have a single shortest representation.
+                if shift and b == 0:
+                    raise CodecError("non-canonical varint")
                 return n
         raise CodecError("varint overflow")
 
