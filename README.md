@@ -129,6 +129,38 @@ printf 'Hello agent' | python -m nexo encode-text --opaque
 printf 'Hello agent' | python -m nexo encode-text | python -m nexo decode-text
 ```
 
+## Authenticated remote agent connections
+
+For communicating across computers, NEXO includes a bounded **NXF/1**
+length-framed socket adapter that transports ordinary agent messages, plain
+text, and real NXI/1 image data over one connection. `connect_tls`
+uses Python's standard certificate- and hostname-verifying TLS client.
+This is a transport security layer, **not encryption within the NEXO codec**.
+
+```python
+from nexo import AgentSocketSession
+
+# Connect to a server that already supports NXF/1 over authenticated TLS.
+with AgentSocketSession.connect_tls("agent.example.com", 443) as peer:
+    peer.negotiate()                     # both peers exchange capabilities
+    peer.send_text("Hello from agent A") # arbitrary plain text, not JSON
+    peer.send_image(open("photo.png", "rb").read(), mime="image/png")
+```
+
+The recipient must run the complementary NXF/1 receiver over a TLS
+connection; a general-purpose HTTPS server **will not** understand these
+frames. See [the local socket example](examples/socket_session.py) for
+a working pair of agents on `socket.socketpair()`. Plain sockets
+are rejected by default; the example explicitly uses
+`allow_insecure=True` only for trusted local testing.
+
+TLS checks a remote **server certificate and hostname**. The application must
+still authorize agents and, if appropriate, require mutual TLS/client identity.
+NXF/1 packets have strict size bounds, incomplete-frame detection, and
+separate types for capabilities, message envelopes, and image chunks.
+It does not implement retries, replay protection, concurrent multiplexed
+image transfers, or an agent identity registry.
+
 ## Sending images between agents
 
 **NXI/1 actually transports the image bytes.** Unlike a shared-store

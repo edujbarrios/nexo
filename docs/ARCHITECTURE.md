@@ -26,6 +26,7 @@ nexo/
 │   ├── filesystem.py          persistent local blob adapter
 │   ├── plaintext.py           explicit string-message adapter
 │   ├── transfer.py            separate chunked NXI/1 attachment transport
+│   ├── transport.py           bounded NXF/1 socket/TLS host-side adapter
 │   └── __main__.py            CLI adapter
 ├── bindings/                  separate optional maturin build
 ├── tests/                     Python black-box and golden tests
@@ -40,8 +41,9 @@ nexo/
 to peer capability and the provided tokenizer's results. It does not pretend
 that fewer bytes always means fewer model tokens.
 **Adapter:** native, tool, plain-text, attachment-frame and blob integrations
-isolate external concerns. NXI/1 transmits real image bytes through a host-
-provided authenticated transport; storage manifests are not a network link.
+isolate external concerns. NXI/1 transmits real image bytes through an
+NXF/1 length-framed host transport. Remote clients use certificate-checked TLS;
+storage manifests are not a network link.
 **Dependency inversion:** tokenizers are injected callables, not hard-coded
 model SDKs or imports. The core is deterministic, standalone and offline.
 **Fail closed:** invalid headers, trailing bytes, dangerous recursion,
