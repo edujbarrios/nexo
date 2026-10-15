@@ -19,6 +19,7 @@ nexo/
 │   ├── codec.py               stable public codec facade
 │   ├── _wire/                 internal reference codec submodules
 │   ├── agent.py               capability and token-cost strategy
+│   ├── negotiation.py         versioned pure capability handshake
 │   ├── native.py              optional accelerator adapter
 │   ├── tools.py               framework-agnostic function tools
 │   ├── attachments.py         shared manifest/integrity logic + memory store

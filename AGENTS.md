@@ -4,7 +4,9 @@
 
 1. Install the SDK in the **agent host**:
    `pip install "git+https://github.com/edujbarrios/nexo.git"`.
-2. Verify the receiver supports `nexo/1`. If not, send compact JSON.
+2. Exchange `nexo.advertise_capabilities()` as authenticated JSON, then
+   initialize `nexo.AgentChannel.from_peer_capabilities(remote_offer)`.
+   Unknown versions safely fall back to JSON.
 3. Use `nexo.AgentChannel(peer_supports_nexo=True, tokenizer=...)` and call
    `.send(data)`, or `nexo.prepare_peer_message(data, peer_supports_nexo=True, tokenizer=...)`
    to obtain a small envelope with `format` and `payload`.

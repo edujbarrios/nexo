@@ -37,6 +37,20 @@ The **host application** calls the decoder. An arbitrary LLM cannot decode an
 opaque NEXO frame by itself. Send a NEXO frame only after the receiving agent
 has agreed it can decode `nexo/1`.
 
+Agents can negotiate supported formats without involving the LLM:
+
+```python
+from nexo import AgentChannel, advertise_capabilities
+
+remote_offer = advertise_capabilities()  # received as ordinary JSON
+channel = AgentChannel.from_peer_capabilities(remote_offer)
+frame = channel.send({"type": "request", "task": 42})
+```
+
+Capability exchange is not authentication. Host applications must authenticate
+peer identities and authorize messages separately. Unknown versions default
+to JSON.
+
 For reusable host integrations, the `AgentChannel` façade keeps peer capability,
 tokenizer and optional protocol setup overhead in one place:
 

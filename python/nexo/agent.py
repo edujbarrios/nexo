@@ -9,6 +9,7 @@ import json
 from typing import Callable, Optional
 
 from .codec import CodecError, MAX_FRAME, decode, encode
+from .negotiation import peer_supports_nexo
 
 
 AGENT_INSTRUCTIONS = (
@@ -143,6 +144,17 @@ class AgentChannel:
     peer_supports_nexo: bool = False
     tokenizer: Optional[Callable] = None
     nexo_setup_tokens: int = 0
+
+    @classmethod
+    def from_peer_capabilities(
+        cls, advertisement, *, tokenizer=None, nexo_setup_tokens=0,
+    ):
+        """Initialize after an explicit peer capability advertisement."""
+        return cls(
+            peer_supports_nexo=peer_supports_nexo(advertisement),
+            tokenizer=tokenizer,
+            nexo_setup_tokens=nexo_setup_tokens,
+        )
 
     def send(self, message):
         return prepare_peer_message(
