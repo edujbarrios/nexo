@@ -14,7 +14,8 @@ NEXO remains experimental; items below are not promises or release claims.
 
 ## Next validation milestones
 
-1. Green Rust and Python CI with cross-language golden vectors.
+1. Green Rust and Python CI with cross-language golden vectors. A dedicated
+   cross-language randomized parity job is now included, pending CI validation.
 2. Python/Rust behavioral and numerical parity tests for complex values,
    including exact Python `bytes` returns from PyO3 bindings.
 3. Build an optional native wheel and benchmark the speed against stdlib.
