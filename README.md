@@ -90,9 +90,10 @@ tokenizer, message content, envelope, and additional instructions. When a
 tokenizer is supplied, the SDK compares complete serialized envelopes and
 falls back to JSON unless NEXO is cheaper on that measurement.
 
-Images and large files should be sent through an authenticated external
-storage mechanism with SHA-256 references in messages; this does not reduce
-the token cost of interpreting an image with a multimodal model.
+Images and large files can be sent as real NXI/1 data chunks through an
+authenticated host transport, or referenced by SHA-256 when both agents
+already share a trusted blob store. Neither method reduces the token cost
+of interpreting an image with a multimodal model.
 
 > **Experimental v0.1.0.** No PyPI release or universal token-efficiency claim
 > has been established. Both peers must support the same protocol version.
