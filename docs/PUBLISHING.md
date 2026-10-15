@@ -1,153 +1,113 @@
-# Publishing NEXO to PyPI
+# Publish NEXO to PyPI without GitHub Releases or tags
 
-This project is **source-available** under the custom
-[NEXO Attribution–NonCommercial–NoDerivatives license](../LICENSE). Publishing
-a wheel does not convert it to an open-source license or permit commercial use.
+You can publish the pure-Python **`nexo-agent-protocol`** distribution directly
+from GitHub Actions. No GitHub Release, Git tag or permanent PyPI API token
+is necessary. Publishing runs **only on manual request** and uses PyPI
+Trusted Publishing (OIDC).
 
-## Package identities and release scope
+NEXO retains its restrictive
+[Attribution–NonCommercial–NoDerivatives license](../LICENSE). Publishing on
+PyPI does not change these conditions.
 
-- **PyPI distribution:** `nexo-agent-protocol` (proposed; availability must
-  be confirmed at the first registration).
-- **Python import and CLI:** `nexo` (unchanged).
-- **Version:** `0.1.0`, kept in `pyproject.toml` and `python/nexo/__init__.py`.
-- **Original PyPI name `nexo`:** already used by an unrelated project; do
-  **not** publish to it or instruct users to `pip install nexo`.
-- **Optional native extension:** `nexo-native` is independent and is *not*
-  published by this initial workflow. Avoid advertising the native extension
-  as a PyPI dependency until supported wheels and ownership are established.
+## Package identity
 
-## 1. Validate local distribution artifacts
+- Distribution: `nexo-agent-protocol` (verify that you own or can register
+  this name on PyPI; pending publishers do not reserve it).
+- Import and CLI: `nexo`; `pip install nexo` is a different project.
+- Initial version: `0.1.0`, in `pyproject.toml` and
+  `python/nexo/__init__.py`.
+- Native `nexo-native` wheels are **not** included in this upload.
 
-From the repository root, on Python 3.9 or later:
+## 1. Configure the PyPI Trusted Publisher (once)
+
+On [PyPI Publishing](https://pypi.org/manage/account/publishing/),
+register a pending publisher for a new project or add it under your
+existing project:
+
+| Field | Exact value |
+|---|---|
+| PyPI project name | `nexo-agent-protocol` |
+| GitHub owner | `edujbarrios` |
+| GitHub repository | `nexo` |
+| Workflow filename | `release.yml` |
+| GitHub environment | `pypi` |
+
+In [GitHub Environments](https://github.com/edujbarrios/nexo/settings/environments)
+create or verify **`pypi`**. Recommended: configure required reviewer
+approval. **Important:** if deployment branch restrictions are enabled,
+allow **`main`**; this workflow is dispatched from main, **not from a tag**.
+
+For optional rehearsal using **TestPyPI**, independently register the same
+publisher there with environment `testpypi` and create that GitHub
+environment. TestPyPI and PyPI accounts are separate.
+
+No `PYPI_API_TOKEN` GitHub secret is needed.
+
+## 2. Publish directly (without a release or tag)
+
+1. Go to **[Actions → Publish Python SDK](https://github.com/edujbarrios/nexo/actions/workflows/release.yml)**.
+2. Click **Run workflow** and choose branch **`main`**.
+3. Select **`pypi`** from the **`index`** dropdown. (Choose
+   `testpypi` for a dry run only if you configured its publisher too.)
+4. Click **Run workflow** to start.
+5. The `build` job runs tests, builds the wheel and source archive, checks
+   metadata and the LICENSE, and installs and validates the build.
+6. The **Publish manually to PyPI** job uploads the validated artifacts
+   using OIDC. If you protected the `pypi` environment, approve the job.
+7. Wait for the publishing **job** to succeed and verify
+   [the package on PyPI](https://pypi.org/project/nexo-agent-protocol/).
+
+A green build job alone does **not** confirm that PyPI accepted the upload.
+The action must have a Trusted Publisher matching the exact workflow and
+environment; the package name must be available or already yours.
+
+Once published:
+
+```bash
+python -m pip install nexo-agent-protocol==0.1.0
+python -c "import nexo; print(nexo.__version__)"
+nexo --help
+```
+
+**No GitHub Release, tag, push or merge triggers an upload.** Only the
+manual workflow dispatch with an explicit destination does.
+
+## 3. Publish subsequent versions
+
+PyPI does **not** permit overwriting files from an existing version.
+For each new upload, update `pyproject.toml` and the SDK's `__version__`
+together (for example `0.1.1`), merge the changes to `main`, then
+repeat **Actions → Publish Python SDK → Run workflow → pypi**.
+A GitHub Release is optional and unrelated.
+
+## 4. Validate locally if desired
 
 ```bash
 python -m pip install --upgrade build twine
 python -m build
 python -m twine check --strict dist/*
-python -m venv .smoke-venv
-.smoke-venv/bin/python -m pip install --no-index --find-links dist nexo-agent-protocol
-.smoke-venv/bin/python -c "import nexo, importlib.metadata; assert nexo.__version__ == importlib.metadata.version('nexo-agent-protocol')"
-.smoke-venv/bin/python -m nexo --help
+python scripts/check_dist.py
 ```
 
-On Windows, activate `.smoke-venv\Scripts\python.exe` instead. This
-inspects the source archive (`.tar.gz`) and pure-Python universal wheel
-(`py3-none-any.whl`) independently from any editable installation.
-The repository's CI packaging job repeats these steps.
+The publishing workflow performs the same artifact validations and clean
+installation checks automatically.
 
-## 2. Configure GitHub protected environments
+## Troubleshooting and security
 
-Repository: https://github.com/edujbarrios/nexo
+- **PyPI authentication error:** confirm project owner, repository,
+  `release.yml`, and `pypi` match the Trusted Publisher registration.
+- **GitHub deployment blocked:** allow branch `main` in the environment's
+  deployment restrictions rather than only tag patterns.
+- **Version already exists:** increment the package version; you cannot
+  republish the same files or version.
+- **Publishing job skipped:** choose `pypi`, not `testpypi`, and start the
+  manual workflow on `main`.
+- **PyPI name unavailable:** pick an available distribution name and update
+  the metadata, smoke tests, README, publishing workflow and Trusted
+  Publisher registration together.
+- **Incorrect published version:** yank it on PyPI, fix the code and publish
+  a new version. Artifacts are immutable.
+- **Security:** protect `main`, review any changes to `release.yml`, require
+  manual environment approval where possible, and maintain PyPI 2FA.
 
-Go to **Settings → Environments** and create:
-
-- `pypi`: enable **Required reviewers** (manual approval by a maintainer)
-  and deployment restrictions allowing release tags matching `v*`, if the
-  account's GitHub features support these controls.
-- `testpypi`: optionally set reviewers; for a first dry run this can be open.
-  The workflow itself requires manual `workflow_dispatch` on `main`.
-
-Keep the workflow permissions minimal. The publishing job alone requests
-`id-token: write`; build/test jobs never receive upload credentials.
-**Do not store `PYPI_API_TOKEN` secrets**; this uses OIDC Trusted Publishing.
-
-## 3. Register PyPI and TestPyPI Trusted Publishers
-
-Both indices require accounts you control and verified email; enable 2FA
-and use separate credentials for the two indices.
-
-Open [PyPI account publishers](https://pypi.org/manage/account/publishing/)
-and [TestPyPI account publishers](https://test.pypi.org/manage/account/publishing/).
-For a new, unregistered project use **Add a new pending publisher**; for a
-project you already own, use its **Manage → Publishing** page instead.
-
-Set the fields **exactly** as follows:
-
-| Field | PyPI | TestPyPI |
-|---|---|---|
-| PyPI project name | `nexo-agent-protocol` | `nexo-agent-protocol` |
-| Owner | `edujbarrios` | `edujbarrios` |
-| Repository | `nexo` | `nexo` |
-| Workflow name | `release.yml` | `release.yml` |
-| Environment name | `pypi` | `testpypi` |
-
-**Check that the distribution name is available** in each index and is
-owned by you before relying on publication. A pending publisher does not
-reserve the name. If another project already owns it, choose a genuinely
-available distribution name; update `pyproject.toml`, publishing docs,
-workflows, smoke tests and the new publisher registration together.
-Never take over an unrelated project's existing distribution name.
-
-## 4. Test upload without publishing a production release
-
-After `.github/workflows/release.yml` is merged into `main`:
-
-1. Open **Actions → Publish Python SDK → Run workflow**.
-2. Select branch `main` and run it.
-3. The build job checks wheel/sdist metadata and installs the artifacts.
-   The TestPyPI job sends the validated distributions to TestPyPI using OIDC.
-4. Check the project on TestPyPI and optionally install using:
-
-   ```bash
-   python -m pip install --index-url https://test.pypi.org/simple/ \
-     --extra-index-url https://pypi.org/simple/ nexo-agent-protocol==0.1.0
-   ```
-
-Use a fresh virtual environment. TestPyPI is a separate index; package
-versions may already exist there and PyPI/TestPyPI do not allow overwriting
-released files. To rerun upload tests, publish a *new* valid pre-release
-version or use a separate test distribution owned by you.
-
-## 5. Publish to production PyPI by pushing an approved tag
-
-Merge all release changes and verify every CI job and package artifact.
-Then choose one release version, for example `0.1.0`, and ensure
-`pyproject.toml` and `nexo.__version__` both use the same value.
-
-```bash
-git switch main
-git pull --ff-only origin main
-git tag -a v0.1.0 -m "NEXO Python SDK 0.1.0"
-git push origin v0.1.0
-```
-
-Pushing a `vX.Y.Z` tag from a commit on `main` triggers **Publish Python
-SDK**. It verifies the tag equals the package version, builds an isolated
-wheel/sdist, checks metadata, installs the wheel, and pauses for an authorized
-maintainer to approve the `pypi` environment. It then uploads using PyPI
-OIDC short-lived credentials and produces publication attestations. No
-upload happens on ordinary commits, pull requests, or merge events.
-
-Validate on https://pypi.org/project/nexo-agent-protocol/ only **after**
-the workflow succeeds:
-
-```bash
-python -m pip install "nexo-agent-protocol==0.1.0"
-python -c "import nexo; print(nexo.__version__)"
-nexo --help
-```
-
-**Do not create/push the production tag until the trusted publisher exists,
-the name is confirmed, and you are ready to publish an immutable version.**
-
-## Failure modes and rollback
-
-- **PyPI says project/name unavailable:** stop, select another unclaimed
-  distribution name, and update metadata, workflows and OIDC registration.
-- **"invalid-publisher" or OIDC failure:** ensure owner, repository,
-  filename `release.yml` and GitHub environment match PyPI settings exactly.
-- **Version already exists:** bump the version and tag. Never attempt to
-  overwrite or replace an existing release file.
-- **CI/package smoke failure:** fix via PR and release a fresh tag only after
-  rebuilding and rerunning all checks.
-- **Bad published release:** yank it from PyPI, document the issue, and
-  release a new fixed version. PyPI artifacts are immutable.
-- **Security:** protect `main`, release tags and `release.yml` from
-  unauthorized changes; enable environment approvals and review third-party
-  Actions before merges. PyPI Trusted Publishing does not prove that the
-  source or dependencies are secure.
-
-Reference:
-[Official PyPI Trusted Publisher instructions](https://docs.pypi.org/trusted-publishers/using-a-publisher/),
-[PyPI pending publisher setup](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/),
-[Python Packaging Guide](https://packaging.python.org/en/latest/guides/publishing-package-distribution-releases-using-github-actions-ci-cd-workflows/).
+See the [official PyPI Trusted Publishing guide](https://docs.pypi.org/trusted-publishers/using-a-publisher/).

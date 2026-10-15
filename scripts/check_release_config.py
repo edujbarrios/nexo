@@ -15,19 +15,26 @@ workflow = yaml.load(
 )
 project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
 assert project["project"]["name"] == "nexo-agent-protocol"
-assert workflow["on"]["push"]["tags"] == ["v*"]
-assert "workflow_dispatch" in workflow["on"]
+assert set(workflow["on"]) == {"workflow_dispatch"}
+choice = workflow["on"]["workflow_dispatch"]["inputs"]["index"]
+assert choice["type"] == "choice"
+assert choice["required"] == "true"
+assert choice["default"] == "testpypi"
+assert choice["options"] == ["testpypi", "pypi"]
 assert workflow["permissions"] == {"contents": "read"}
 
 jobs = workflow["jobs"]
 assert {"build", "publish-pypi", "publish-testpypi"} == set(jobs)
 assert jobs["build"]["permissions"] == {"contents": "read"}
+assert "refs/heads/main" in jobs["build"]["if"]
 assert jobs["publish-pypi"]["environment"]["name"] == "pypi"
 assert jobs["publish-testpypi"]["environment"]["name"] == "testpypi"
 assert jobs["publish-pypi"]["permissions"] == {"id-token": "write"}
 assert jobs["publish-testpypi"]["permissions"] == {"id-token": "write"}
-assert "push" in jobs["publish-pypi"]["if"]
-assert "workflow_dispatch" in jobs["publish-testpypi"]["if"]
+assert "inputs.index == 'pypi'" in jobs["publish-pypi"]["if"]
+assert "inputs.index == 'testpypi'" in jobs["publish-testpypi"]["if"]
+assert "refs/heads/main" in jobs["publish-pypi"]["if"]
+assert "refs/heads/main" in jobs["publish-testpypi"]["if"]
 assert jobs["publish-pypi"]["needs"] == ["build"]
 assert jobs["publish-testpypi"]["needs"] == ["build"]
 for job in ("publish-pypi", "publish-testpypi"):
@@ -38,4 +45,4 @@ assert all(
     "password" not in str(step).lower() and "api_token" not in str(step).lower()
     for job in jobs.values() for step in job["steps"]
 )
-print("Release workflow OIDC and trigger policy validated")
+print("Manual PyPI/TestPyPI release workflow and OIDC policy validated")
