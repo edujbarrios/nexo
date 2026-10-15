@@ -6,10 +6,11 @@
 
 **A compact, reversible message encoding for cooperating AI agents.**
 
-NEXO is an experimental serialization protocol for structured messages between
-AI-agent applications. It provides a dependency-free Python SDK and a separate
-Rust core. The agent's **host application** handles the encoding and decoding;
-the language model does not need to learn a new wire grammar.
+NEXO is an experimental, versioned **encoding and communication protocol**
+for structured messages, plain text, and media exchanged between AI agents.
+It defines reversible wire representations that cooperating applications can
+interpret without asking a language model to learn a new grammar. The protocol
+also distinguishes transport-byte optimization from model-token efficiency.
 
 > **Encoding is not encryption.** NEXO/1, the legacy opaque display, and
 > NEXO64/1 are reversible encodings, not ciphers. Optional NXE64/1 is an
