@@ -122,6 +122,28 @@ class TestSocketTransport(unittest.TestCase):
             a.send_image(PNG)
             self.assertEqual(b.receive_image().data, PNG)
 
+    def test_local_receive_limit_even_if_remote_bypasses_send_policy(self):
+        a, b = _sessions()
+        with a, b:
+            _negotiate_pair(a, b, max_attachment_bytes=20)
+            self.assertEqual(a.local_capabilities["max_attachment_bytes"], 20)
+            with self.assertRaises(CodecError):
+                b.send_image(PNG)  # Remote advertised a smaller inbound limit.
+            # A manually forged raw peer packet cannot exceed our local limit.
+            for packet in send_image(PNG):
+                b.transport.send_media_packet(packet)
+            with self.assertRaises(CodecError):
+                a.receive_image()
+
+    def test_reject_duplicate_json_keys(self):
+        a, b = socket.socketpair()
+        with closing(a), closing(b):
+            receiver = SocketFramedTransport(b, allow_insecure=True)
+            payload = b'{"protocol":"x","protocol":"y"}'
+            a.sendall(b"NXF\x01C" + struct.pack(">I", len(payload)) + payload)
+            with self.assertRaises(CodecError):
+                receiver.receive_capabilities()
+
     def test_repeated_handshake_rejected(self):
         a, b = _sessions()
         with a, b:

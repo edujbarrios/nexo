@@ -224,3 +224,62 @@ or authorization. Authenticate and encrypt the *external* transport.
 The SDK does not connect to remote hosts on its own and does not parse,
 render, or sanitize the transferred image pixels. Media decoding and
 multimodal model inputs remain the caller's responsibility.
+
+
+## NXF/1 network framing (optional host transport adapter)
+
+NXF/1 is not a new NEXO core value format and does not change NEXO/1 or
+NXI/1 codecs. It frames multiple *complete* control, message and binary
+attachment packets on one **ordered, reliable byte stream** (typically TLS):
+
+| Offset | Size | Definition |
+|---|---:|---|
+| 0 | 4 bytes | `4e 58 46 01` = `NXF` plus version 1 |
+| 4 | 1 byte | packet kind `43` (C), `45` (E), or `49` (I) |
+| 5 | 4 bytes | unsigned big-endian payload length |
+| 9 | length bytes | exactly one packet payload |
+
+- **C:** capability advertisement JSON encoded as UTF-8, using
+  `nexo.advertise_capabilities()` and processed by
+  `AgentChannel.from_peer_capabilities`. Each peer sends a C
+  packet, then receives the peer's C packet before sending NEXO data.
+- **E:** UTF-8 JSON containing exactly one agent envelope with `format`
+  and `payload` fields, processed by the existing agent
+  encoder/decoder. May contain plain-text strings or structured values.
+- **I:** one full **binary** NXI/1 metadata/data packet. Packet count and
+  sizes come from NXI/1; the session reads packets until SHA-256 and the
+  advertised size are verified. Transport framing does not re-encode images.
+
+Control/envelope payloads are limited to 8 MiB; I payloads are limited
+to 1 MiB data plus bounded NXI metadata and framing. The decoder checks the
+length **before** allocating the payload and rejects unknown versions,
+unexpected packet kinds, malformed/duplicate-key JSON and truncated streams.
+Packets of a different kind cannot be silently interpreted as image data.
+
+Capability negotiation is **directional**: the remote peer's declaration
+determines what this agent may send. The *local* declaration determines what
+this agent agrees to receive and its inbound size limits. NXF/1 sessions
+process a single image transfer at a time (multiple independent sockets or
+a future protocol are needed for concurrent transfers).
+
+### Security boundary
+
+NXF/1 **does not implement cryptography itself**. The reference client
+`SocketFramedTransport.connect_tls(host, port)` uses Python
+TLS with trusted root certificate and hostname validation enabled. A normal
+HTTP(S) endpoint will not speak this custom framed protocol; deploy a peer
+server that speaks NXF/1 over TLS. Incoming server-side TLS sockets require
+appropriate certificates and (when needed) client-certificate verification.
+
+The application must additionally authorize peer identities and prevent
+replays and unauthorized access to exchanged content. An explicit
+`allow_insecure=True` bypass exists **only** to demonstrate
+local socketpair() communication in tests. Image SHA-256 checks detect
+accidental/unauthenticated corruption but are not message authentication;
+the TLS and host authorization layer supplies that boundary.
+
+`AgentSocketSession` supports text, structured messages and
+image transfers but does not provide retries, disk spill, resumability,
+multi-attachment multiplexing or asynchronous networking. Remote deployment
+requires suitable connection lifetimes, timeouts, access controls and
+application-level error handling.

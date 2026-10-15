@@ -17,6 +17,8 @@ NEXO remains experimental; items below are not promises or release claims.
   capability negotiation, plus socket and text-only transport examples.
 - NXF/1 bounded socket framing and TLS-verified client with combined agent
   text/message/image session (host authorization and server deployment external).
+- Directional capability checks for send and receive, malformed-frame and
+  duplicate-key rejection tests on local sockets.
 
 ## Next validation milestones
 
