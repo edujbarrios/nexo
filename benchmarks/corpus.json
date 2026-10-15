@@ -256,7 +256,7 @@
     "agent": "planner",
     "metadata": {
       "constraints": [
-        "🧩 validación UTF-8",
+        "🧩 UTF-8 validation",
         "backward compatible",
         "sandbox safe"
       ],
