@@ -53,6 +53,8 @@ sequence. NEXO is selected only if the **entire serialized envelope** costs fewe
 tokens than the JSON envelope. If you know the extra protocol instruction cost,
 pass `nexo_setup_tokens` to account for it. The caller must still count actual
 provider/tool framing, repeated prompts and any visual tokens separately.
+If the message is valid JSON but outside NEXO/1's signed-i64 or depth
+constraints, the agent transport automatically falls back to JSON.
 
 ```python
 import tiktoken  # install optional extra: pip install ".[tokens]"

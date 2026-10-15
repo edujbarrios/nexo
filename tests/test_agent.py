@@ -73,5 +73,13 @@ class TestAgent(unittest.TestCase):
         with self.assertRaises(ValueError):
             prepare_peer_message({"x": 1}, nexo_setup_tokens=-1)
 
+    def test_json_only_integer_fallback(self):
+        message = {"task": 2**70}
+        frame = prepare_peer_message(
+            message, peer_supports_nexo=True, tokenizer=list,
+        )
+        self.assertEqual(frame["format"], "json")
+        self.assertEqual(parse_peer_message(frame), message)
+
     def test_instruction(self):
         self.assertIn("Do not ask an LLM", AGENT_INSTRUCTIONS)

@@ -92,7 +92,12 @@ def prepare_peer_message(
     json_envelope = _envelope("json", plain)
     if not peer_supports_nexo:
         return json_envelope
-    wire = encode(message)
+    try:
+        wire = encode(message)
+    except CodecError:
+        # JSON can represent some values outside the NEXO/1 domain, such as
+        # unsigned integers above i64::MAX. Do not break agent communication.
+        return json_envelope
     nexo_envelope = _envelope("nexo/1", wire)
     if tokenizer is not None:
         if not callable(tokenizer):
