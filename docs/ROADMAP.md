@@ -18,13 +18,14 @@ NEXO remains experimental; items below are not promises or release claims.
 2. Python/Rust behavioral and numerical parity tests for complex values,
    including exact Python `bytes` returns from PyO3 bindings.
 3. Build an optional native wheel and benchmark the speed against stdlib.
-4. Compare NEXO, compact JSON, TOON and alternatives on **real** agent
-   message corpora with model-specific tokenizers.
-5. Include actual orchestration instructions, transport envelope and tool
-   call overhead in all end-to-end token cost claims.
-6. Add fuzzer, randomized conformance tests, hostile input limits and a
-   shared authenticated blob-store interface.
-7. Consider version-negotiated custom schema dictionaries if results justify.
+4. ✅ Initial optional JSON/NEXO/TOON benchmark harness, including
+   round-trip verification, envelope measurements and negative results.
+5. Collect **real** anonymized agent communication corpora (only with
+   permission); rerun model-specific tokenizers and publish results.
+6. Include actual orchestration instructions, provider/tool framing and
+   runtime billing in end-to-end token cost claims.
+7. Expand fuzzer/adversarial tests and build a secure remote blob-store adapter.
+8. Consider version-negotiated custom schema dictionaries if results justify.
 
 ## Non-goals for v1
 
