@@ -70,9 +70,12 @@ compressing image token billing, or teaching every LLM a new grammar.
 
 - [x] Prepare named pure-Python distribution `nexo-agent-protocol` without
   changing the import path, maintaining the custom restrictive license.
-- [ ] Check wheels and sdists with Twine, install them in a clean environment,
-  and verify runtime behavior without a local source checkout.
-- [ ] Configure PyPI/TestPyPI Trusted Publishers and manual GitHub approvals.
-- [ ] Publish versioned releases by tag after the maintainer authorizes them.
+- [x] Build wheel and sdist in CI, validate with Twine, test clean
+  installation, and confirm the sdist builds a working wheel.
+- [x] Add a manual GitHub Actions workflow to choose PyPI or TestPyPI using
+  OIDC, with no GitHub Release or tag requirement.
+- [ ] Verify maintainer-controlled PyPI/TestPyPI Trusted Publishers and
+  GitHub environment approvals for dispatch on branch `main`.
+- [ ] Publish the initial `0.1.0` wheel/sdist and verify it on PyPI.
 - [ ] Separately validate cross-platform native wheels for `nexo-native`,
   including distribution ownership, before automating its publication.
