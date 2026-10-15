@@ -42,8 +42,11 @@ jobs:
           python-version: "3.12"
       - uses: dtolnay/rust-toolchain@stable
       - run: python -m pip install -e ".[dev]" maturin
-      - run: maturin build --release --manifest-path crates/nexo-python/Cargo.toml -o dist
+      - name: Build separate nexo-native wheel
+        working-directory: bindings
+        run: maturin build --release -o ../dist
       - run: python -m pip install dist/*.whl
+      - run: python -m pip show nexo nexo-native
       - run: |
           python -c "import nexo_native; assert nexo_native.encode_text({'task': 1})"
       - run: python -m pytest -q tests/test_native.py
