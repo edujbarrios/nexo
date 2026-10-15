@@ -1,56 +1,21 @@
 # NEXO
 
+[![PyPI version](https://img.shields.io/pypi/v/nexo-agent-protocol?label=PyPI)](https://pypi.org/project/nexo-agent-protocol/)
+[![Python versions](https://img.shields.io/pypi/pyversions/nexo-agent-protocol?label=Python)](https://pypi.org/project/nexo-agent-protocol/)
+[![CI](https://github.com/edujbarrios/nexo/actions/workflows/ci.yml/badge.svg)](https://github.com/edujbarrios/nexo/actions/workflows/ci.yml)
+
 **A compact, reversible message encoding for cooperating AI agents.**
 
-NEXO is an experimental serialization protocol for structured messages between
-AI-agent applications. It provides a dependency-free Python SDK and a separate
-Rust core. The agent's **host application** handles the encoding and decoding;
-the language model does not need to learn a new wire grammar.
+NEXO is an experimental, versioned **encoding and communication protocol**
+for structured messages, plain text, and media exchanged between AI agents.
+It defines reversible wire representations that cooperating applications can
+interpret without asking a language model to learn a new grammar. The protocol
+also distinguishes transport-byte optimization from model-token efficiency.
 
 > **Encoding is not encryption.** NEXO/1, the legacy opaque display, and
 > NEXO64/1 are reversible encodings, not ciphers. Optional NXE64/1 is an
 > explicitly separate **AES-256-GCM authenticated encryption** format;
 > securely distributed keys and authenticated peers are still required.
-
-## Why this repository exists
-
-**Agents communicate constantly, but message encoding, capability discovery,
-media transfer, and cost selection are often left to separate application
-integrations.** JSON is interoperable yet repeats common keys; binary codecs
-can save network bytes but cannot simply be pasted into LLM prompts; image
-attachments and access controls must be engineered separately.
-
-NEXO is an experiment in making those pieces work together behind one small,
-**host-side API**. Its core question is practical: *can two cooperating agents
-exchange typed data, arbitrary text and actual images using a reversible,
-versioned protocol, while selecting the cheapest supported representation
-for each transport and model?* The LLM does not need to memorize NEXO syntax.
-
-### Where NEXO stands out
-
-| Capability | What NEXO provides | What this does **not** imply |
-|---|---|---|
-| Typed agent messages | Versioned binary and text NEXO/1; deterministic dictionaries, Rust/Python parity fixtures | Not universally smaller than JSON or other codecs |
-| Token-cost-aware fallback | Host compares complete text envelopes for a supplied model tokenizer and chooses JSON when NEXO loses | Not automatic provider-billing optimization |
-| Plug-in communication | Versioned peer negotiation, `AgentChannel`, tool schemas and NXF/1 socket frames | Not a universal agent discovery or authorization service |
-| Real image/file delivery | NXI/1 chunked transfers, SHA-256 checks, optional disk streaming and text-only presentation | Not image understanding or fewer vision tokens |
-| Privacy option | Optional AES-256-GCM encrypted NXE64 frames and locally scoped replay tracking | Not secure key distribution, durable replay protection or an audited production messaging system |
-| Inspectable engineering | Frozen golden vectors, hostile-input tests, benchmark comparisons and CI across Python and Rust | No claim to beat every alternative |
-
-**Choosing an alternative is sometimes better.** Use plain JSON for
-maximum compatibility or small one-off messages; a standard binary format
-such as CBOR/MessagePack for general-purpose byte serialization; and TOON
-when its text layout is more efficient for your model/workload. NEXO's
-distinction is the *integrated agent-facing communication path*, not a
-guaranteed compression ratio or a proprietary cryptographic primitive.
-
-**Evidence, not marketing:** on a published nine-message synthetic corpus
-using the `gpt-4o` tokenizer, NEXO Binary used fewer transport bytes than
-compact JSON, **but NEXO Text consumed more tokens than JSON**; TOON had
-the lowest serialized-envelope token count in that comparison. See
-[measured benchmarks](docs/BENCHMARKS.md) and reproduce the results before
-choosing a format for real traffic. NEXO is experimental and source-available
-under the restrictive [NEXO license](LICENSE), not an OSI-open-source library.
 
 ## What is NEXO?
 
@@ -136,10 +101,101 @@ authenticated host transport, or referenced by SHA-256 when both agents
 already share a trusted blob store. Neither method reduces the token cost
 of interpreting an image with a multimodal model.
 
-> **Experimental v0.1.0.** No PyPI release or universal token-efficiency claim
+> **Experimental v0.1.0.** The PyPI badge reports published releases, which
+> may lag behind the source repository. No universal token-efficiency claim
 > has been established. Both peers must support the same protocol version.
 > NEXO is **source-available**, not OSI-approved open source. See the
 > [restrictive license](LICENSE) before using the code.
+
+## The Python library: designed for AI agents
+
+**The NEXO Python SDK is built for applications that host AI agents**—not
+for an LLM to read or manually decode an opaque string. The sender's host
+serializes a message, peers advertise supported formats, and the receiver's
+host decodes the message before handing its contents to the model.
+
+- **Agent-to-agent messages:** typed data and ordinary plain text, with
+  explicit NEXO/1 capability negotiation and a JSON fallback.
+- **Real media transfer:** images and files sent as verified NXI/1 packets
+  or written to disk using bounded streaming.
+- **Secure transport options:** NXF/1 framing over externally authenticated
+  TLS, plus optional AES-256-GCM encrypted NXE64/1 presentations.
+- **Practical integrations:** standalone Python, function-tool schemas,
+  a CLI, and optional separately packaged Rust acceleration.
+
+The PyPI distribution is **`nexo-agent-protocol`** and the Python import
+remains `nexo`. Check the badge above for PyPI publication status.
+
+```bash
+python -m pip install nexo-agent-protocol
+```
+
+A minimal exchange between two compatible agent hosts:
+
+```python
+from nexo import AgentChannel, advertise_capabilities
+
+# In production, exchange capabilities through an authenticated channel.
+remote_offer = advertise_capabilities()
+sender = AgentChannel.from_peer_capabilities(remote_offer)
+receiver = AgentChannel.from_peer_capabilities(advertise_capabilities())
+
+wire = sender.send({"type": "result", "task": 42, "status": "ok"})
+print(wire)
+print(receiver.receive(wire))
+```
+
+**Output** for this message (without an optional token-cost tokenizer):
+
+```text
+{'format': 'nexo/1', 'payload': 'NX1{3:.2;!1;.1;#42;.0;!0;'}
+{'status': 'ok', 'task': 42, 'type': 'result'}
+```
+
+The host must verify that the peer can decode the negotiated version.
+An LLM cannot be assumed to understand compressed NEXO frames on its own.
+For actual remote connections, see [NXF/1 socket sessions](#authenticated-remote-agent-connections)
+and the [agent pair example](examples/agent_pair.py).
+
+## Why this repository exists
+
+**Agents communicate constantly, but message encoding, capability discovery,
+media transfer, and cost selection are often left to separate application
+integrations.** JSON is interoperable yet repeats common keys; binary codecs
+can save network bytes but cannot simply be pasted into LLM prompts; image
+attachments and access controls must be engineered separately.
+
+NEXO is an experiment in making those pieces work together behind one small,
+**host-side API**. Its core question is practical: *can two cooperating agents
+exchange typed data, arbitrary text and actual images using a reversible,
+versioned protocol, while selecting the cheapest supported representation
+for each transport and model?* The LLM does not need to memorize NEXO syntax.
+
+### Where NEXO stands out
+
+| Capability | What NEXO provides | What this does **not** imply |
+|---|---|---|
+| Typed agent messages | Versioned binary and text NEXO/1; deterministic dictionaries, Rust/Python parity fixtures | Not universally smaller than JSON or other codecs |
+| Token-cost-aware fallback | Host compares complete text envelopes for a supplied model tokenizer and chooses JSON when NEXO loses | Not automatic provider-billing optimization |
+| Plug-in communication | Versioned peer negotiation, `AgentChannel`, tool schemas and NXF/1 socket frames | Not a universal agent discovery or authorization service |
+| Real image/file delivery | NXI/1 chunked transfers, SHA-256 checks, optional disk streaming and text-only presentation | Not image understanding or fewer vision tokens |
+| Privacy option | Optional AES-256-GCM encrypted NXE64 frames and locally scoped replay tracking | Not secure key distribution, durable replay protection or an audited production messaging system |
+| Inspectable engineering | Frozen golden vectors, hostile-input tests, benchmark comparisons and CI across Python and Rust | No claim to beat every alternative |
+
+**Choosing an alternative is sometimes better.** Use plain JSON for
+maximum compatibility or small one-off messages; a standard binary format
+such as CBOR/MessagePack for general-purpose byte serialization; and TOON
+when its text layout is more efficient for your model/workload. NEXO's
+distinction is the *integrated agent-facing communication path*, not a
+guaranteed compression ratio or a proprietary cryptographic primitive.
+
+**Evidence, not marketing:** on a published nine-message synthetic corpus
+using the `gpt-4o` tokenizer, NEXO Binary used fewer transport bytes than
+compact JSON, **but NEXO Text consumed more tokens than JSON**; TOON had
+the lowest serialized-envelope token count in that comparison. See
+[measured benchmarks](docs/BENCHMARKS.md) and reproduce the results before
+choosing a format for real traffic. NEXO is experimental and source-available
+under the restrictive [NEXO license](LICENSE), not an OSI-open-source library.
 
 ## NEXO64 image coding and authenticated encryption
 
