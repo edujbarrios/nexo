@@ -477,13 +477,20 @@ Distribution: **`nexo-agent-protocol`**; Python import: **`nexo`**; CLI:
 distribution on PyPI. The proposed new distribution name is **not reserved**
 until the maintainer registers/publishes it.
 
-The first `0.1.0` package is prepared for direct PyPI publication.
-After configuring the PyPI Trusted Publisher and the GitHub `pypi`
-environment, open **[Actions → Publish Python SDK](https://github.com/edujbarrios/nexo/actions/workflows/release.yml)**,
-select branch `main` and `index=pypi`, then click **Run workflow**.
-**No GitHub Release or version tag is required.** The publication is
-confirmed only when the PyPI upload job succeeds. See the
-[step-by-step publishing guide](docs/PUBLISHING.md).
+The first `0.1.0` package is prepared for **automatic PyPI publishing**.
+When package-related changes reach `main`, the
+[Publish Python SDK](https://github.com/edujbarrios/nexo/actions/workflows/release.yml)
+workflow checks the current package version against PyPI. It builds,
+tests and attempts to publish **only if that version is not yet available**.
+No GitHub Release, tag or manual workflow dispatch is required, though the
+protected `pypi` environment may require maintainer approval. The
+upload is confirmed only after PyPI accepts it.
+
+The PyPI version and supported-Python badges at the top of this README
+query PyPI automatically and will reflect the first release and subsequent
+new versions without editing the README (subject to badge caching). Until
+the project exists on PyPI, an unavailable status is expected.
+See [automatic PyPI publishing and setup](docs/PUBLISHING.md).
 
 The pure-Python release does not need Rust. The optional `nexo-native` PyO3
 extension remains a **separate, unpublished distribution** until a
