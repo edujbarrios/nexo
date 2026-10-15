@@ -59,8 +59,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: python -m pip install -e . toon-format
-      - run: python benchmarks/run.py --toon
+      - run: python -m pip install -e ".[tokens]" toon-format
+      - run: python benchmarks/run.py --toon --model gpt-4o
 
   rust-python-parity:
     runs-on: ubuntu-latest
