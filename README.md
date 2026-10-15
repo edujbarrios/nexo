@@ -472,25 +472,30 @@ encrypted strings vary because every encryption uses a fresh nonce.
 
 ## PyPI distribution and release policy
 
-Distribution: **`nexo-agent-protocol`**; Python import: **`nexo`**; CLI:
-**`nexo`**. Do not confuse this project with the separately owned `nexo`
-distribution on PyPI. The proposed new distribution name is **not reserved**
-until the maintainer registers/publishes it.
+**Published on PyPI:** [`nexo-agent-protocol` 0.1.0](https://pypi.org/project/nexo-agent-protocol/0.1.0/).
+The package imports as **`nexo`** and installs a CLI named **`nexo`**.
+Do not confuse this project with the unrelated `nexo` PyPI distribution.
 
-The first `0.1.0` package is prepared for **automatic PyPI publishing**.
-When package-related changes reach `main`, the
+Install the latest published pure-Python SDK:
+
+```bash
+python -m pip install nexo-agent-protocol
+```
+
+Release `0.1.0` was uploaded as a universal wheel and source distribution
+through [GitHub Actions run 38769888677](https://github.com/edujbarrios/nexo/actions/runs/38769888677),
+with successful HTTP 200 responses from PyPI for both artifacts.
+
+When a **new package version** is merged into `main`, the
 [Publish Python SDK](https://github.com/edujbarrios/nexo/actions/workflows/release.yml)
-workflow checks the current package version against PyPI. It builds,
-tests and attempts to publish **only if that version is not yet available**.
-No GitHub Release, tag or manual workflow dispatch is required, though the
-protected `pypi` environment may require maintainer approval. The
-upload is confirmed only after PyPI accepts it.
+workflow checks PyPI and automatically publishes it if absent. Published
+versions are immutable, so bump `pyproject.toml` and `nexo.__version__`
+for subsequent releases. **No GitHub Release or tag is required.**
 
-The PyPI version and supported-Python badges at the top of this README
-query PyPI automatically and will reflect the first release and subsequent
-new versions without editing the README (subject to badge caching). Until
-the project exists on PyPI, an unavailable status is expected.
-See [automatic PyPI publishing and setup](docs/PUBLISHING.md).
+The PyPI-version and supported-Python badges at the top of the README
+automatically reflect the latest release (after any badge-cache delay).
+No bot or follow-up commit is needed to refresh their values.
+See the [publishing guide](docs/PUBLISHING.md).
 
 The pure-Python release does not need Rust. The optional `nexo-native` PyO3
 extension remains a **separate, unpublished distribution** until a
