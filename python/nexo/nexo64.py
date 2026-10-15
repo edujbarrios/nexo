@@ -111,7 +111,8 @@ def seal_nexo64(data, key, *, aad=b""):
     return ENCRYPTED_PREFIX + encode_nexo64(sealed)[len(ENCODE_PREFIX):]
 
 
-def open_nexo64(frame, key, *, aad=b"", max_bytes=DEFAULT_MAX_BYTES):
+def open_nexo64(frame, key, *, aad=b"", max_bytes=DEFAULT_MAX_BYTES,
+                replay_guard=None):
     """Authenticate and decrypt an NXE64/1 frame. Tampering fails closed."""
     _bound(max_bytes)
     cipher = _aes(key)
@@ -126,7 +127,13 @@ def open_nexo64(frame, key, *, aad=b"", max_bytes=DEFAULT_MAX_BYTES):
         raise CodecError("truncated encrypted NEXO64 frame")
     nonce, ciphertext = payload[:_NONCE_LENGTH], payload[_NONCE_LENGTH:]
     try:
-        return cipher.decrypt(nonce, ciphertext, authenticated_aad)
+        plaintext = cipher.decrypt(nonce, ciphertext, authenticated_aad)
+        if replay_guard is not None:
+            from .replay import ReplayGuard
+            if not isinstance(replay_guard, ReplayGuard):
+                raise TypeError("replay_guard must be a ReplayGuard")
+            replay_guard.record_authenticated(key, nonce)
+        return plaintext
     except Exception as exc:
         # cryptography.exceptions.InvalidTag for tampering or incorrect keys.
         # Avoid revealing error details from the authentication oracle.

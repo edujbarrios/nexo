@@ -48,7 +48,7 @@ def _require_mime(mime):
     return mime
 
 
-def _packet_as_bytes(packet, *, key=None):
+def _packet_as_bytes(packet, *, key=None, replay_guard=None):
     if key is not None and (
         not isinstance(packet, str) or not packet.startswith(ENCRYPTED_PREFIX)
     ):
@@ -60,6 +60,7 @@ def _packet_as_bytes(packet, *, key=None):
             packet = open_nexo64(
                 packet, key, aad=_MEDIA_AAD,
                 max_bytes=MAX_CHUNK + _CHUNK_HEADER + MAX_METADATA,
+                replay_guard=replay_guard,
             )
         elif packet.startswith(ENCODE_PREFIX):
             packet = decode_nexo64(
@@ -157,11 +158,15 @@ class AttachmentReceiver:
     For concurrent transfers, use a separate receiver instance per transfer.
     """
 
-    def __init__(self, *, max_bytes=DEFAULT_MAX_BYTES, key=None):
+    def __init__(self, *, max_bytes=DEFAULT_MAX_BYTES, key=None,
+                 replay_guard=None):
         if type(max_bytes) is not int or max_bytes < 0:
             raise ValueError("max_bytes must be nonnegative")
         self.max_bytes = max_bytes
+        if replay_guard is not None and key is None:
+            raise ValueError("replay guard requires encrypted frames and a key")
         self._key = key
+        self._replay_guard = replay_guard
         self._manifest = None
         self._chunk_size = None
         self._chunks = None
@@ -182,7 +187,8 @@ class AttachmentReceiver:
         """Consume one packet; return True when the complete blob is verified."""
         if self.complete:
             raise CodecError("attachment already complete")
-        packet = _packet_as_bytes(frame, key=self._key)
+        packet = _packet_as_bytes(frame, key=self._key,
+                                  replay_guard=self._replay_guard)
         if len(packet) < 5:
             raise CodecError("truncated attachment packet")
         tag = packet[4:5]
@@ -256,9 +262,11 @@ def send_attachment(data, *, mime="application/octet-stream",
     return AttachmentSender(data, mime=mime, chunk_size=chunk_size).frames(text=text, key=key)
 
 
-def receive_attachment(frames, *, max_bytes=DEFAULT_MAX_BYTES, store=None, key=None):
+def receive_attachment(frames, *, max_bytes=DEFAULT_MAX_BYTES, store=None,
+                       key=None, replay_guard=None):
     """Consume frames and verify the complete blob; optionally store it locally."""
-    receiver = AttachmentReceiver(max_bytes=max_bytes, key=key)
+    receiver = AttachmentReceiver(max_bytes=max_bytes, key=key,
+                                  replay_guard=replay_guard)
     for packet in frames:
         receiver.accept(packet)
     result = receiver.result()
@@ -277,10 +285,12 @@ def send_image(data, *, mime="image/png", chunk_size=DEFAULT_CHUNK, text=False, 
     return send_attachment(data, mime=mime, chunk_size=chunk_size, text=text, key=key)
 
 
-def receive_image(frames, *, max_bytes=DEFAULT_MAX_BYTES, store=None, key=None):
+def receive_image(frames, *, max_bytes=DEFAULT_MAX_BYTES, store=None,
+                  key=None, replay_guard=None):
     """Return a verified ReceivedAttachment with raw image data."""
     # Reject non-image transfers before any optional persistence side effect.
-    result = receive_attachment(frames, max_bytes=max_bytes, key=key)
+    result = receive_attachment(frames, max_bytes=max_bytes, key=key,
+                                replay_guard=replay_guard)
     if not result.manifest["mime"].lower().startswith("image/"):
         raise CodecError("received attachment is not an image")
     if store is not None:

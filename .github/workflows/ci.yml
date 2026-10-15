@@ -27,6 +27,7 @@ jobs:
       - run: python examples/socket_session.py
       - run: python examples/stream_image_file.py
       - run: python examples/nexo64_images.py
+      - run: python examples/replay_guard.py
       - run: python benchmarks/run.py
       - run: |
           printf 'Hello, agent' | python -m nexo encode-text | python -m nexo decode-text
@@ -91,7 +92,8 @@ jobs:
         with:
           python-version: "3.12"
       - run: python -m pip install -e ".[dev,crypto]"
-      - run: python -m pytest -q tests/test_nexo64.py tests/test_nexo64_crypto.py tests/test_nexo64_cli.py
+      - run: python -m pytest -q tests/test_nexo64.py tests/test_nexo64_crypto.py tests/test_nexo64_cli.py tests/test_replay_guard.py
+      - run: python examples/replay_guard.py
       - run: python examples/nexo64_images.py
       - run: |
           python -c "from nexo import seal_nexo64, open_nexo64; key=b'k'*32; assert open_nexo64(seal_nexo64(b'image bytes', key), key) == b'image bytes'"

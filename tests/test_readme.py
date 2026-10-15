@@ -35,3 +35,13 @@ def test_intro_example_exact_lengths():
     assert len(text.encode("utf-8")) == 25
     assert len(binary) == 17
     assert decode(text) == decode(binary) == message
+
+def test_readme_explains_why_nexo_exists_and_reports_actual_outputs():
+    text = README.read_text(encoding="utf-8")
+    assert text.index("## Why this repository exists") < text.index("## What is NEXO?")
+    assert "### Where NEXO stands out" in text
+    assert "NEXO Text consumed more tokens than JSON" in text
+    assert "## Runnable examples and their outputs" in text
+    assert "NX1{3:.2;!1;.1;#42;.0;!0;" in text
+    assert "38731051914" in text
+    assert "replay_guard.py" in text

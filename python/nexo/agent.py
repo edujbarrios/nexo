@@ -195,12 +195,14 @@ class AgentChannel:
             raise CodecError("image exceeds peer attachment limit")
         return send_image(data, mime=mime, chunk_size=chunk_size, text=text, key=key)
 
-    def receive_image(self, frames, *, store=None, key=None):
+    def receive_image(self, frames, *, store=None, key=None,
+                      replay_guard=None):
         """Reassemble and verify an image; no network transport is provided."""
         if not self.peer_supports_attachments:
             raise CodecError("peer did not negotiate NXI/1 attachment support")
         return receive_image(
             frames, max_bytes=self.max_attachment_bytes, store=store, key=key,
+            replay_guard=replay_guard,
         )
 
     def receive(self, envelope):

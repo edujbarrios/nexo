@@ -12,6 +12,46 @@ the language model does not need to learn a new wire grammar.
 > explicitly separate **AES-256-GCM authenticated encryption** format;
 > securely distributed keys and authenticated peers are still required.
 
+## Why this repository exists
+
+**Agents communicate constantly, but message encoding, capability discovery,
+media transfer, and cost selection are often left to separate application
+integrations.** JSON is interoperable yet repeats common keys; binary codecs
+can save network bytes but cannot simply be pasted into LLM prompts; image
+attachments and access controls must be engineered separately.
+
+NEXO is an experiment in making those pieces work together behind one small,
+**host-side API**. Its core question is practical: *can two cooperating agents
+exchange typed data, arbitrary text and actual images using a reversible,
+versioned protocol, while selecting the cheapest supported representation
+for each transport and model?* The LLM does not need to memorize NEXO syntax.
+
+### Where NEXO stands out
+
+| Capability | What NEXO provides | What this does **not** imply |
+|---|---|---|
+| Typed agent messages | Versioned binary and text NEXO/1; deterministic dictionaries, Rust/Python parity fixtures | Not universally smaller than JSON or other codecs |
+| Token-cost-aware fallback | Host compares complete text envelopes for a supplied model tokenizer and chooses JSON when NEXO loses | Not automatic provider-billing optimization |
+| Plug-in communication | Versioned peer negotiation, `AgentChannel`, tool schemas and NXF/1 socket frames | Not a universal agent discovery or authorization service |
+| Real image/file delivery | NXI/1 chunked transfers, SHA-256 checks, optional disk streaming and text-only presentation | Not image understanding or fewer vision tokens |
+| Privacy option | Optional AES-256-GCM encrypted NXE64 frames and locally scoped replay tracking | Not secure key distribution, durable replay protection or an audited production messaging system |
+| Inspectable engineering | Frozen golden vectors, hostile-input tests, benchmark comparisons and CI across Python and Rust | No claim to beat every alternative |
+
+**Choosing an alternative is sometimes better.** Use plain JSON for
+maximum compatibility or small one-off messages; a standard binary format
+such as CBOR/MessagePack for general-purpose byte serialization; and TOON
+when its text layout is more efficient for your model/workload. NEXO's
+distinction is the *integrated agent-facing communication path*, not a
+guaranteed compression ratio or a proprietary cryptographic primitive.
+
+**Evidence, not marketing:** on a published nine-message synthetic corpus
+using the `gpt-4o` tokenizer, NEXO Binary used fewer transport bytes than
+compact JSON, **but NEXO Text consumed more tokens than JSON**; TOON had
+the lowest serialized-envelope token count in that comparison. See
+[measured benchmarks](docs/BENCHMARKS.md) and reproduce the results before
+choosing a format for real traffic. NEXO is experimental and source-available
+under the restrictive [NEXO license](LICENSE), not an OSI-open-source library.
+
 ## What is NEXO?
 
 Agents routinely exchange requests, tool results, status updates, and other
@@ -118,6 +158,8 @@ frame = encode_nexo64(photo)             # NX64/1:...
 assert decode_nexo64(frame) == photo
 ```
 
+**Output:** No stdout; the assertion succeeds. `frame` starts with `NX64/1:`.
+
 ### Real image encryption: NXE64/1 with AES-256-GCM
 
 Install the optional `crypto` extra (`python -m pip install '.[crypto]'` from
@@ -137,6 +179,8 @@ assert open_nexo64(encrypted_text, key) == photo
 packets = list(send_image(photo, text="encrypted", key=key))
 assert receive_image(packets, key=key).data == photo
 ```
+
+**Output:** No stdout; both assertions succeed, and encrypted bytes vary on each run.
 
 Existing `NXI1:` Base64 and binary NXI/1 packet formats continue to work.
 For the new unencrypted presentation, use `send_image(photo, text="nexo64")`.
@@ -179,6 +223,8 @@ opaque_frame = encode_text("Hello!", mode="opaque")   # "NXO1:" + base64url byte
 assert decode_text(binary_frame) == decode_text(opaque_frame) == "Hello!"
 ```
 
+**Output:** No stdout; both representations decode to `Hello!`.
+
 The **opaque** form looks less readable but is standard reversible Base64:
 it does **not** provide encryption, confidentiality, or improved token counts.
 Plain NEXO strings usually have encoding overhead and are **not compressed
@@ -192,6 +238,8 @@ printf 'Hello agent' | python -m nexo encode-text
 printf 'Hello agent' | python -m nexo encode-text --opaque
 printf 'Hello agent' | python -m nexo encode-text | python -m nexo decode-text
 ```
+
+**Output:** The first command prints `NX1:11:Hello agent`; the second an `NXO1:` reversible wrapper; the last prints `Hello agent`.
 
 ## Authenticated remote agent connections
 
@@ -210,6 +258,8 @@ with AgentSocketSession.connect_tls("agent.example.com", 443) as peer:
     peer.send_text("Hello from agent A") # arbitrary plain text, not JSON
     peer.send_image(open("photo.png", "rb").read(), mime="image/png")
 ```
+
+**Output:** No stdout on success. The server must implement NXF/1 over TLS; this illustrative hostname is **not a working server**.
 
 The recipient must run the complementary NXF/1 receiver over a TLS
 connection; a general-purpose HTTPS server **will not** understand these
@@ -243,6 +293,8 @@ result = receive_file_to_directory(
 print(result.path)      # received/<verified_sha256>
 print(result.manifest)  # size, mime, hash and content-addressed ref
 ```
+
+**Output:** `received/<verified_sha256>` followed by that file's verified manifest. The digest depends on your input.
 
 With a negotiated NXF/1 socket session, use
 `session.send_image_file(path)` on the sender and
@@ -284,6 +336,8 @@ assert received.data == image
 print(received.manifest)  # mime, ref, sha256, size
 ```
 
+**Output:** A Python dictionary containing `mime: 'image/png'`, `size: <your file bytes>`, `sha256: <digest>`, and `ref: 'sha256:<digest>'`.
+
 For a text-only transport, set `text=True` in `send_image`:
 packets then begin with `NXI1:` and contain Base64. Base64
 increases the transfer size; it does not encrypt it. Do **not** put those
@@ -308,6 +362,59 @@ The default transfer limit is 64 MiB per attachment, with a maximum of
 capability advertisement and reject incomplete or inconsistent transfers.
 NXI/1 is an extension alongside NEXO/1; it does not alter existing messages.
 
+## Runnable examples and their outputs
+
+Run the following from a checkout after `python -m pip install -e .`.
+These are actual **stdout results observed in GitHub Actions** on the
+[verified main CI run](https://github.com/edujbarrios/nexo/actions/runs/38731051914),
+with irrelevant setup output omitted. The binaries/hash values below are from
+the checked-in example inputs. Changing an image changes its SHA-256.
+
+| Command | Expected stdout (representative lines) |
+|---|---|
+| `python examples/agent_pair.py` | `Transport: {'format': 'nexo/1', 'payload': 'NX1{3:.2;!1;.1;#42;.0;!0;'}` then `Decoded: {'status': 'ok', 'task': 42, 'type': 'result'}`; also prints the host instruction text |
+| `python examples/handshake.py` | `Negotiated: nexo/1 Decoded: {'status': 'pending', 'task': 42, 'type': 'request'}` |
+| `python examples/attachments.py` | A dictionary with `type: 'image'` and a SHA-256 manifest (`size: 19` for the built-in test blob) |
+| `python examples/plain_text.py` | Begins `text : NX1:50:Hello, agent B. This is plain text, not JSON. 🤖`; ends `Channel round-trip: nexo/1` |
+| `python examples/image_transfer.py` | `Image transferred over a socket: sha256:6b1048f8a6d40bac0b2954c18fefa40c4ea7a96120fc2e54b7317c0e43c2bbec` |
+| `python examples/socket_session.py` | `Transport: NXF/1; image: sha256:6b1048f8a6d40bac0b2954c18fefa40c4ea7a96120fc2e54b7317c0e43c2bbec` |
+| `python examples/stream_image_file.py` | `Streamed and SHA-256 verified: 6b1048f8a6d40bac0b2954c18fefa40c4ea7a96120fc2e54b7317c0e43c2bbec` |
+| `python examples/nexo64_images.py` | `Custom binary-to-text frame prefix: NX64/1`, followed by an AES-GCM success line if `nexo[crypto]` is installed, or an optional-dependency skip line otherwise |
+| `python examples/replay_guard.py` | With `nexo[crypto]`: `First authenticated message: accepted` then `Repeated encrypted message: rejected`. Without the optional extra: an installation hint |
+
+The corresponding [source files](examples/) perform additional
+round-trip assertions; a successful assertion produces **no stdout**.
+Random AES-GCM nonces make ciphertext different on every run, so encrypted
+byte strings are intentionally **not** provided as fixed example outputs.
+
+### CLI example: actual decoded sizes
+
+```bash
+echo '{"status":"ok","task":42,"type":"result"}' | python -m nexo inspect
+```
+
+**Output (from CI; fields shown exactly):**
+
+```json
+{
+  "protocol": "nexo/1",
+  "json_bytes": 41,
+  "nexo_text_bytes": 25,
+  "nexo_binary_bytes": 17,
+  "nexo_text": "NX1{3:.2;!1;.1;#42;.0;!0;",
+  "nexo_binary_hex": "4e58010703000208010001035400000800",
+  "decoded_equal": true,
+  "note": "Byte lengths are not model token counts."
+}
+```
+
+**Other command outputs:** `python -m nexo encode-text` prints an
+`NX1:...` text frame; `encode64` prints `NX64/1:...` and `seal64` prints
+`NXE64/1:...`. When redirected into `photo.n64`, `photo.nxe64`, or
+`restored.png`, the commands write **files**, not status text. Their
+round-trip result is exact byte equality with the original input image;
+encrypted strings vary because every encryption uses a fresh nonce.
+
 ## Installation
 
 Python 3.9+. The default SDK needs no Rust compiler.
@@ -330,6 +437,8 @@ received = parse_peer_message(frame)
 assert received == message
 ```
 
+**Output:** Prints the `AGENT_INSTRUCTIONS` string. The final equality assertion is silent.
+
 The **host application** calls the decoder. An arbitrary LLM cannot decode an
 opaque NEXO frame by itself. Send a NEXO frame only after the receiving agent
 has agreed it can decode `nexo/1`.
@@ -343,6 +452,8 @@ remote_offer = advertise_capabilities()  # received as ordinary JSON
 channel = AgentChannel.from_peer_capabilities(remote_offer)
 frame = channel.send({"type": "request", "task": 42})
 ```
+
+**Output:** No stdout. `frame` is an envelope containing `format` and `payload`.
 
 Capability exchange is not authentication. Host applications must authenticate
 peer identities and authorize messages separately. Unknown versions default
@@ -358,6 +469,8 @@ channel = AgentChannel(peer_supports_nexo=True)
 outbound = channel.send({"type": "result", "task": 42})
 assert channel.receive(outbound) == {"type": "result", "task": 42}
 ```
+
+**Output:** No stdout; decoding restores the original object.
 
 The optional `tokenizer` argument takes a function mapping text to a token
 sequence. NEXO is selected only if the **entire serialized envelope** costs fewer
@@ -379,6 +492,8 @@ frame = prepare_peer_message(
 )
 ```
 
+**Output:** No stdout. The selected envelope format depends on the supplied tokenizer and the specific message.
+
 ### Low-level interface
 
 ```python
@@ -389,6 +504,8 @@ assert decode(encode(message)) == message
 assert decode(Codec(profile="binary").encode(message)) == message
 print(benchmark(message))   # no tokenizer: token fields are None
 ```
+
+**Output:** A metrics dictionary with JSON/NEXO byte counts; token fields are `None` without a tokenizer.
 
 CLI: `python -m nexo encode`, `decode`, `bench` and `inspect` use stdin and stdout.
 Use `inspect` to see *both* wire representations and how many bytes each needs:
@@ -446,6 +563,8 @@ wire = encode({"type": "image", "data": manifest})
 assert store.resolve(manifest) == b"sample image bytes"
 ```
 
+**Output:** No stdout; the SHA-256 reference resolves back to identical bytes.
+
 For multiple cooperating processes on the **same trusted filesystem**, use
 `FileBlobStore` for persistent, content-addressed data:
 
@@ -455,6 +574,8 @@ store = FileBlobStore("./agent-shared-blobs")
 reference = store.add(b"image bytes", mime="image/png")
 assert store.resolve(reference) == b"image bytes"
 ```
+
+**Output:** No stdout; the stored bytes match the original.
 
 The store verifies SHA-256 on read, rejects path-like digests, and makes
 writes atomic. A shared disk is not an authenticated remote transport.

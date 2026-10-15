@@ -101,8 +101,10 @@ class FileAttachmentReceiver(AttachmentReceiver):
     The destination cannot be chosen through untrusted peer metadata.
     """
 
-    def __init__(self, directory, *, max_bytes=DEFAULT_MAX_BYTES, key=None):
-        super().__init__(max_bytes=max_bytes, key=key)
+    def __init__(self, directory, *, max_bytes=DEFAULT_MAX_BYTES, key=None,
+                 replay_guard=None):
+        super().__init__(max_bytes=max_bytes, key=key,
+                         replay_guard=replay_guard)
         self.root = Path(directory).expanduser().resolve()
         self.root.mkdir(parents=True, exist_ok=True)
         if not self.root.is_dir():
@@ -178,12 +180,15 @@ def send_file(path, *, mime="application/octet-stream", chunk_size=DEFAULT_CHUNK
 
 
 def receive_file_to_directory(frames, directory, *, max_bytes=DEFAULT_MAX_BYTES,
-                              image_only=False, key=None):
+                              image_only=False, key=None, replay_guard=None):
     """Return a verified file; reject incomplete/malformed packets and MIME.
 
     Caller supplies a trusted local directory. The file is digest-named.
     """
-    with FileAttachmentReceiver(directory, max_bytes=max_bytes, key=key) as receiver:
+    with FileAttachmentReceiver(
+        directory, max_bytes=max_bytes, key=key,
+        replay_guard=replay_guard,
+    ) as receiver:
         for frame in frames:
             receiver.accept(frame)
         if not receiver.complete:
