@@ -15,6 +15,10 @@ NEXO remains experimental; items below are not promises or release claims.
 - Plain-text NEXO/1 string API, CLI and explicitly non-encrypted opaque display.
 - NXI/1 image/file transmission with chunking, SHA-256 validation and explicit
   capability negotiation, plus socket and text-only transport examples.
+- NXF/1 bounded socket framing and TLS-verified client with combined agent
+  text/message/image session (host authorization and server deployment external).
+- Directional capability checks for send and receive, malformed-frame and
+  duplicate-key rejection tests on local sockets.
 
 ## Next validation milestones
 
@@ -37,7 +41,8 @@ NEXO remains experimental; items below are not promises or release claims.
 8. ✅ Add shared adversarial wire fixtures, strict varint decoding and
    seeded byte-mutation tests. Added NXI/1 malformed/duplicate/truncated
    media-packet coverage. Next: libFuzzer/cargo-fuzz coverage and a
-   secure authenticated remote blob-store/transport adapter.
+   server-side authenticated transport integration, resumable transfers and
+   true streaming-to-disk memory bounds.
 9. Study a tokenizer-oriented NEXO/2 text grammar or custom schema
    dictionaries **only** if independent measurements justify a version bump.
 
