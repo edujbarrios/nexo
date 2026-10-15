@@ -308,3 +308,41 @@ helper and NXF/1 session's `receive_image_to_directory` use
 this strategy. The transport itself is still TLS-only for remote peers;
 SHA-256 alone is not sender authentication. Disk persistence and crash
 durability are separate concerns and require host filesystem policy.
+
+## NEXO64/1 — versioned binary-to-text alphabet
+
+Syntax: `NX64/1:<payload>:<crc32>` where the payload uses an unpadded,
+permuted Base64url alphabet and the CRC32 is eight lowercase hex digits.
+The standard alphabet is
+`ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_`.
+The NEXO64 alphabet is frozen as:
+
+`nexo_alphabet[i] = standard_alphabet[(37*i + 11) mod 64]`, for `i = 0..63`.
+
+37 is coprime with 64, making this a reversible mapping. Serialize binary
+bytes using RFC 4648 Base64url, strip `=` padding, replace each standard
+symbol with its NEXO64 counterpart, and append CRC32 of the original bytes.
+Decoders reverse the mapping, require canonical Base64, check the checksum
+and enforce a maximum decoded size. **This is not encryption.** The public
+alphabet and CRC32 cannot protect against deliberate tampering or disclosure.
+
+## NXE64/1 — AES-256-GCM authenticated encryption
+
+Syntax: `NXE64/1:<payload>:<crc32>`, with the same NEXO64 mapping applied to
+`nonce[12] || AES-256-GCM-ciphertext || authentication-tag[16]`.
+The CRC32 covers that complete binary payload, but provides no security;
+the AES-GCM tag is the cryptographic integrity/authentication mechanism.
+Keys are exactly 32 random bytes. Every encryption generates a random
+96-bit nonce via the OS cryptographic randomness provider.
+
+Additional authenticated data is the binary prefix
+`b"NEXO64/AES-256-GCM/1\x00"` followed by the caller-provided AAD.
+Encrypted NXI/1 packets use application AAD `b"NXI/1"`; each packet
+receives a fresh nonce, preserving the existing NXI/1 wire format after
+decryption. Receivers configured with a key reject non-encrypted packets
+to prevent a plaintext downgrade. AES-GCM rejects modified ciphertext,
+incorrect AAD and incorrect keys.
+
+Key establishment, sender identity, replay resistance and authorization
+are outside this encoding. Do not substitute a secret alphabet or a CRC
+for authenticated encryption. `cryptography` is an optional Python extra.
