@@ -12,7 +12,7 @@ import struct
 
 from .agent import AgentChannel
 from .codec import CodecError, MAX_FRAME
-from .negotiation import advertise_capabilities
+from .negotiation import advertise_capabilities, peer_supports_attachments
 from .transfer import (
     AttachmentReceiver, DEFAULT_CHUNK, DEFAULT_MAX_BYTES,
     MAX_CHUNK, MAX_METADATA, AttachmentSender, _CHUNK_HEADER,
@@ -186,6 +186,7 @@ class AgentSocketSession:
             raise TypeError("transport must be a SocketFramedTransport")
         self.transport = transport
         self.channel = None
+        self.local_capabilities = None
 
     @classmethod
     def connect_tls(cls, host, port, *, timeout=10, context=None):
@@ -198,14 +199,16 @@ class AgentSocketSession:
                   nexo_setup_tokens=0):
         if self.channel is not None:
             raise CodecError("session already negotiated")
-        self.transport.send_capabilities(advertise_capabilities(
+        local = advertise_capabilities(
             allow_nexo=allow_nexo, allow_attachments=allow_attachments,
             max_attachment_bytes=max_attachment_bytes,
-        ))
+        )
+        self.transport.send_capabilities(local)
         offer = self.transport.receive_capabilities()
         self.channel = AgentChannel.from_peer_capabilities(
             offer, tokenizer=tokenizer, nexo_setup_tokens=nexo_setup_tokens,
         )
+        self.local_capabilities = local
         return offer
 
     def _channel(self):
@@ -235,10 +238,14 @@ class AgentSocketSession:
 
     def receive_image(self, *, store=None):
         """Read packets until a complete SHA-256-verified image is available."""
-        channel = self._channel()
-        if not channel.peer_supports_attachments:
-            raise CodecError("peer did not negotiate NXI/1 attachment support")
-        receiver = AttachmentReceiver(max_bytes=channel.max_attachment_bytes)
+        self._channel()
+        # The local offer controls what this side is willing to RECEIVE.
+        # The remote offer controls what this side is allowed to SEND.
+        if not peer_supports_attachments(self.local_capabilities):
+            raise CodecError("local agent did not advertise NXI/1 receive support")
+        receiver = AttachmentReceiver(
+            max_bytes=self.local_capabilities["max_attachment_bytes"]
+        )
         while not receiver.complete:
             receiver.accept(self.transport.receive_media_packet())
         result = receiver.result()
