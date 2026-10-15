@@ -21,6 +21,7 @@ jobs:
       - run: python examples/agent_pair.py
       - run: python examples/attachments.py
       - run: python benchmarks/run.py
+      - run: echo '{"status":"ok","task":42,"type":"result"}' | python -m nexo inspect
   rust:
     runs-on: ubuntu-latest
     steps:

@@ -77,8 +77,16 @@ assert decode(Codec(profile="binary").encode(message)) == message
 print(benchmark(message))   # no tokenizer: token fields are None
 ```
 
-CLI: `python -m nexo encode`, `python -m nexo decode` and
-`python -m nexo bench` use stdin and stdout. For agent function calling,
+CLI: `python -m nexo encode`, `decode`, `bench` and `inspect` use stdin and stdout.
+Use `inspect` to see *both* wire representations and how many bytes each needs:
+
+```sh
+echo '{"status":"ok","task":42,"type":"result"}' | python -m nexo inspect
+```
+
+The inspection includes hex output for the binary wire, UTF-8 text mode,
+and a reversible roundtrip check. See the byte-by-byte breakdown in
+[Protocol](docs/PROTOCOL.md). For agent function calling,
 `nexo.TOOL_SCHEMAS` provides framework-agnostic tool definitions.
 
 

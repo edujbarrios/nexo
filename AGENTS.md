@@ -35,3 +35,10 @@ For an agent framework that supports function tools, `nexo.TOOL_SCHEMAS`,
 - Benchmark JSON and alternatives honestly, including failed comparisons.
 - Observe the restrictive LICENSE. Unlicensed third-party modifications
   are not automatically authorized by the ability to view the repository.
+
+## Understanding the binary codec
+
+Run `echo '{"status":"ok","task":42,"type":"result"}' | python -m nexo inspect`
+to inspect text and binary wire bytes. Read `docs/PROTOCOL.md` for exact
+byte tags, varint/ZigZag encoding and frozen dictionaries. Do not send raw
+binary hex into LLM prompts and assume it will be natively compressed.
