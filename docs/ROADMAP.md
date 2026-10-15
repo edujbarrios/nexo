@@ -25,13 +25,18 @@ NEXO remains experimental; items below are not promises or release claims.
   decoding, bounded frames, CRC32, and existing NXI/1 compatibility.
 - Optional NXE64/1 authenticated AES-256-GCM image-frame encryption,
   randomized nonces, key/associated-data checks, and downgrade refusal.
+- Optional bounded per-process `ReplayGuard` for authenticated NXE64 messages,
+  with fail-closed limits and cross-transfer reuse; no distributed guarantee.
+- README explains NEXO's purpose and tradeoffs and records CI-verified
+  outputs of the runnable examples.
 
 ## Next validation milestones
 
-1. Green Rust and Python CI with cross-language golden vectors. A dedicated
-   cross-language randomized parity job is now included, pending CI validation.
-2. Python/Rust behavioral and numerical parity tests for complex values,
-   including exact Python `bytes` returns from PyO3 bindings.
+1. ✅ Rust and Python CI with shared golden vectors and a randomized
+   cross-language parity job; regression builds still run on every PR.
+2. ✅ Frozen Python/Rust behavioral and numerical parity tests, including
+   exact `bytes` returns from the PyO3 binary interface; expand coverage
+   as the protocol evolves.
 3. ✅ Build a separate native wheel in CI and add an opt-in local throughput
    benchmark against stdlib JSON and the Python NEXO reference codec.
    Deployment performance and real-world benefits remain unverified.
@@ -49,9 +54,10 @@ NEXO remains experimental; items below are not promises or release claims.
    media-packet coverage. Next: libFuzzer/cargo-fuzz coverage and a
    server-side authenticated transport integration and resumable transfers
    (streaming-to-disk memory bounds are now supported).
-9. Design authenticated key provisioning, replay prevention and key rotation
-   for long-lived encrypted agent sessions. Independently review the new
-   NXE64/1 envelope before describing it as production security.
+9. ✅ Add opt-in, bounded local replay detection for decrypted NXE64 messages
+   and chunked transfers. Still needed: **durable/distributed** replay-state
+   persistence, authenticated key provisioning, rotation, peer authorization,
+   and an independent security review before production deployment.
 10. Study a tokenizer-oriented NEXO/2 text grammar or custom schema
    dictionaries **only** if independent measurements justify a version bump.
 

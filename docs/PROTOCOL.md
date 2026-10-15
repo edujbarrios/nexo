@@ -346,3 +346,22 @@ incorrect AAD and incorrect keys.
 Key establishment, sender identity, replay resistance and authorization
 are outside this encoding. Do not substitute a secret alphabet or a CRC
 for authenticated encryption. `cryptography` is an optional Python extra.
+
+### Optional local replay rejection for NXE64/1
+
+`ReplayGuard(max_entries=65536)` is a bounded, in-process, thread-safe
+nonce cache. Callers reuse one object for successive `open_nexo64(...,
+replay_guard=guard)` calls or `receive_image(..., key=key,
+replay_guard=guard)` / `receive_file_to_directory(..., key=key,
+replay_guard=guard)` transfers. Entries are keyed by a locally HMACed
+combination of the AES-256-GCM key and the authenticated 96-bit nonce.
+Replays are rejected only **after** AES-GCM authentication succeeds.
+
+The cache has no silent eviction. Once full, it fails closed rather than
+forgetting old nonces. A failed or incomplete transfer can consume entries
+for packets that authenticated before the failure; retransmission should
+use freshly encrypted frames. This guard is **not** a durable session
+protocol, a global replay database, or a substitute for trusted peers.
+Restarting a process or constructing a new guard loses previous replay
+history. Use durable authenticated counters/IDs for cross-session and
+cross-server replay prevention and secure key rotation.
