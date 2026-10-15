@@ -97,3 +97,34 @@ jobs:
       - run: python examples/nexo64_images.py
       - run: |
           python -c "from nexo import seal_nexo64, open_nexo64; key=b'k'*32; assert open_nexo64(seal_nexo64(b'image bytes', key), key) == b'image bytes'"
+
+  distribution:
+    name: Build and smoke-test PyPI artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build universal wheel and source archive
+        run: |
+          python -m pip install --upgrade build twine
+          python -m build
+      - name: Validate metadata and package contents
+        run: |
+          python -m twine check --strict dist/*
+          python scripts/check_dist.py
+      - name: Validate clean wheel installation
+        run: |
+          python -m venv .smoke-venv
+          .smoke-venv/bin/python -m pip install --no-index --find-links dist nexo-agent-protocol==0.1.0
+          .smoke-venv/bin/python -c "import nexo, importlib.metadata; assert nexo.__version__ == importlib.metadata.version('nexo-agent-protocol') == '0.1.0'; assert nexo.encode('hello')"
+          .smoke-venv/bin/nexo --help
+          printf 'Hello' | .smoke-venv/bin/python -m nexo encode-text | .smoke-venv/bin/python -m nexo decode-text
+      - name: Confirm wheel can be rebuilt from sdist
+        run: |
+          mkdir -p sdist-wheel
+          python -m pip wheel --no-deps --wheel-dir sdist-wheel dist/*.tar.gz
+          test -n "$(find sdist-wheel -name '*.whl' -print -quit)"

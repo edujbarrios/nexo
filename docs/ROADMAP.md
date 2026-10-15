@@ -65,3 +65,14 @@ NEXO remains experimental; items below are not promises or release claims.
 
 Opaque model-internal tokens, guaranteed savings for arbitrary messages,
 compressing image token billing, or teaching every LLM a new grammar.
+
+## Packaging and distribution milestones
+
+- [x] Prepare named pure-Python distribution `nexo-agent-protocol` without
+  changing the import path, maintaining the custom restrictive license.
+- [ ] Check wheels and sdists with Twine, install them in a clean environment,
+  and verify runtime behavior without a local source checkout.
+- [ ] Configure PyPI/TestPyPI Trusted Publishers and manual GitHub approvals.
+- [ ] Publish versioned releases by tag after the maintainer authorizes them.
+- [ ] Separately validate cross-platform native wheels for `nexo-native`,
+  including distribution ownership, before automating its publication.

@@ -1,18 +1,38 @@
 [build-system]
-requires = ["setuptools>=77"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "nexo"
+name = "nexo-agent-protocol"
 version = "0.1.0"
-description = "Agent-first reversible compact messages with a Rust core"
-readme = "README.md"
+description = "Agent-to-agent messages, plain text, image transfer, and optional encryption"
+readme = {file = "README.md", content-type = "text/markdown"}
 requires-python = ">=3.9"
 license = "LicenseRef-NEXO-NC-ND-1.0"
 license-files = ["LICENSE"]
 authors = [{name = "Eduardo J. Barrios"}]
-keywords = ["agents", "llm", "serialization", "token-efficiency"]
+keywords = ["ai-agents", "agent-communication", "serialization", "nexo", "image-transfer"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Communications",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+]
 dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/edujbarrios/nexo"
+Repository = "https://github.com/edujbarrios/nexo"
+Documentation = "https://github.com/edujbarrios/nexo#readme"
+Issues = "https://github.com/edujbarrios/nexo/issues"
+Changelog = "https://github.com/edujbarrios/nexo/releases"
 
 [project.optional-dependencies]
 tokens = ["tiktoken>=0.7"]
@@ -24,9 +44,11 @@ nexo = "nexo.__main__:main"
 
 [tool.setuptools]
 package-dir = {"" = "python"}
+include-package-data = true
 
 [tool.setuptools.packages.find]
 where = ["python"]
+include = ["nexo", "nexo.*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -1,7 +1,7 @@
 """Show NEXO64 custom image-to-text coding and real AES-GCM encryption.
 
 Install the optional crypto dependency for the encrypted demonstration:
-    pip install -e ".[crypto]"
+    pip install "nexo-agent-protocol[crypto]"
 
 The NEXO64 alphabet is public and provides no secrecy. NXE64/1 is
 authenticated encryption, powered by cryptography, not by the alphabet.
