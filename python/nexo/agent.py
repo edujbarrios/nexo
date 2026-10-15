@@ -187,20 +187,20 @@ class AgentChannel:
         return value
 
     def send_image(self, data, *, mime="image/png", chunk_size=256 * 1024,
-                   text=False):
+                   text=False, key=None):
         """Yield real image frames for an already authenticated transport."""
         if not self.peer_supports_attachments:
             raise CodecError("peer did not negotiate NXI/1 attachment support")
         if len(data) > self.max_attachment_bytes:
             raise CodecError("image exceeds peer attachment limit")
-        return send_image(data, mime=mime, chunk_size=chunk_size, text=text)
+        return send_image(data, mime=mime, chunk_size=chunk_size, text=text, key=key)
 
-    def receive_image(self, frames, *, store=None):
+    def receive_image(self, frames, *, store=None, key=None):
         """Reassemble and verify an image; no network transport is provided."""
         if not self.peer_supports_attachments:
             raise CodecError("peer did not negotiate NXI/1 attachment support")
         return receive_image(
-            frames, max_bytes=self.max_attachment_bytes, store=store,
+            frames, max_bytes=self.max_attachment_bytes, store=store, key=key,
         )
 
     def receive(self, envelope):

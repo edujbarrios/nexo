@@ -16,6 +16,7 @@ dependencies = []
 
 [project.optional-dependencies]
 tokens = ["tiktoken>=0.7"]
+crypto = ["cryptography>=42,<46"]
 dev = ["pytest>=8", "ruff>=0.6"]
 
 [project.scripts]
