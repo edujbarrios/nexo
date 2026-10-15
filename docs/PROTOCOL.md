@@ -163,3 +163,12 @@ finite floats. Frame size is limited to 8 MiB; container item count and
 nesting depth are bounded. Unknown tags, duplicate object keys, bad UTF-8
 and trailing bytes are rejected. **Encoding is not authentication, encryption,
 authorization or sanitization of agent instructions.**
+
+## Canonical unsigned varints
+
+NEXO/1 writers emit unsigned varints in their *shortest* byte representation.
+Decoders reject redundant high-order zero groups (for example, `80 00`
+instead of `00`) and unsigned 64-bit overflow. This removes multiple
+byte spellings for the same integer value. The fixed rejection vectors
+in [fixtures/invalid_frames.json](../fixtures/invalid_frames.json) are
+tested by both Rust and Python.

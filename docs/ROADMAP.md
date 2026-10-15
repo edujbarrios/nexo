@@ -26,7 +26,9 @@ NEXO remains experimental; items below are not promises or release claims.
    permission); rerun model-specific tokenizers and publish results.
 6. Include actual orchestration instructions, provider/tool framing and
    runtime billing in end-to-end token cost claims.
-7. Expand fuzzer/adversarial tests and build a secure remote blob-store adapter.
+7. ✅ Add shared adversarial wire fixtures, strict varint decoding and
+   seeded byte-mutation tests. Next: libFuzzer/cargo-fuzz coverage and a
+   secure remote blob-store adapter.
 8. Consider version-negotiated custom schema dictionaries if results justify.
 
 ## Non-goals for v1

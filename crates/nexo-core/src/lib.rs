@@ -100,6 +100,22 @@ mod tests {
     }
 
     #[test]
+    fn shared_invalid_frames_are_rejected() {
+        let fixtures: Value =
+            serde_json::from_str(include_str!("../../../fixtures/invalid_frames.json")).unwrap();
+        for fixture in fixtures.as_array().unwrap() {
+            let data = if let Some(hex) = fixture.get("binary_hex").and_then(Value::as_str) {
+                hex.as_bytes().chunks_exact(2).map(|chunk| {
+                    u8::from_str_radix(std::str::from_utf8(chunk).unwrap(), 16).unwrap()
+                }).collect::<Vec<u8>>()
+            } else {
+                fixture["text"].as_str().unwrap().as_bytes().to_vec()
+            };
+            assert!(decode(&data).is_err(), "accepted invalid frame: {}", fixture["name"]);
+        }
+    }
+
+    #[test]
     fn signed_integer_limits() {
         let min = json!(i64::MIN);
         let max = json!(i64::MAX);
