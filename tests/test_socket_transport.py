@@ -69,8 +69,6 @@ class TestSocketTransport(unittest.TestCase):
             SocketFramedTransport.connect_tls("example.com", 0)
 
     def test_text_message_and_image_same_socket(self):
-        with _sessions()[0] as _:
-            pass  # handled below with both handles in a single scope
         a, b = _sessions()
         with a, b:
             with self.assertRaises(CodecError):
