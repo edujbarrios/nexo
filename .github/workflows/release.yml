@@ -91,7 +91,7 @@ jobs:
 
   publish-testpypi:
     name: Publish manually to TestPyPI
-    if: needs.build.outputs.should_publish == 'true' && github.event_name == 'workflow_dispatch' && inputs.index == 'testpypi'
+    if: github.ref == 'refs/heads/main' && needs.build.outputs.should_publish == 'true' && github.event_name == 'workflow_dispatch' && inputs.index == 'testpypi'
     needs: [build]
     runs-on: ubuntu-latest
     environment:
@@ -112,7 +112,7 @@ jobs:
 
   publish-pypi:
     name: Publish new versions to PyPI
-    if: needs.build.outputs.should_publish == 'true' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.index == 'pypi'))
+    if: github.ref == 'refs/heads/main' && needs.build.outputs.should_publish == 'true' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.index == 'pypi'))
     needs: [build]
     runs-on: ubuntu-latest
     environment:
