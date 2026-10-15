@@ -6,6 +6,11 @@ The production upload is attempted automatically when a new, unpublished
 package version is merged into `main`. The PyPI Trusted Publisher controls
 the actual upload, and the GitHub `pypi` environment can require approval.
 
+**Initial release confirmed:** [version 0.1.0](https://pypi.org/project/nexo-agent-protocol/0.1.0/)
+was successfully published as a wheel and sdist by
+[Actions run 38769888677](https://github.com/edujbarrios/nexo/actions/runs/38769888677)
+on October 15, 2026. Subsequent releases use the version-aware workflow.
+
 The code is source-available under the restrictive
 [Attribution–NonCommercial–NoDerivatives license](../LICENSE).
 PyPI distribution does not change its permitted uses.
