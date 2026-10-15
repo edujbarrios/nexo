@@ -79,9 +79,11 @@ compressing image token billing, or teaching every LLM a new grammar.
   and dry runs, with no GitHub Release or tag requirement.
 - [x] Add live PyPI/Python badge URLs to README; they update automatically
   after publication without a bot commit.
-- [ ] Verify maintainer-controlled PyPI/TestPyPI Trusted Publishers and
-  GitHub environment approvals for publishing from branch `main`.
-- [ ] Publish the initial `0.1.0` wheel/sdist and verify it on PyPI;
-  document any outstanding OIDC/environment authorization failure.
+- [x] Verify production PyPI OIDC Trusted Publisher through a successful
+  authenticated upload from branch `main`. TestPyPI registration and
+  optional GitHub environment reviewer policies remain maintainer settings.
+- [x] Publish both `0.1.0` artifacts to production PyPI through
+  [Actions run 38769888677](https://github.com/edujbarrios/nexo/actions/runs/38769888677).
+  PyPI returned HTTP 200 for wheel and sdist.
 - [ ] Separately validate cross-platform native wheels for `nexo-native`,
   including distribution ownership, before automating its publication.
