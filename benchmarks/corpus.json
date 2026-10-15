@@ -72,5 +72,216 @@
       "size": 23456,
       "mime": "image/png"
     }
+  },
+  {
+    "type": "result",
+    "task": 202,
+    "status": "ok",
+    "data": {
+      "rows": [
+        {
+          "id": 1,
+          "name": "agent-1",
+          "status": "pending",
+          "changed": true,
+          "role": "assistant"
+        },
+        {
+          "id": 2,
+          "name": "agent-2",
+          "status": "done",
+          "changed": false,
+          "role": "tool"
+        },
+        {
+          "id": 3,
+          "name": "agent-3",
+          "status": "done",
+          "changed": true,
+          "role": "tool"
+        },
+        {
+          "id": 4,
+          "name": "agent-4",
+          "status": "done",
+          "changed": false,
+          "role": "assistant"
+        },
+        {
+          "id": 5,
+          "name": "agent-5",
+          "status": "pending",
+          "changed": true,
+          "role": "tool"
+        },
+        {
+          "id": 6,
+          "name": "agent-6",
+          "status": "done",
+          "changed": false,
+          "role": "tool"
+        },
+        {
+          "id": 7,
+          "name": "agent-7",
+          "status": "done",
+          "changed": true,
+          "role": "assistant"
+        },
+        {
+          "id": 8,
+          "name": "agent-8",
+          "status": "done",
+          "changed": false,
+          "role": "tool"
+        },
+        {
+          "id": 9,
+          "name": "agent-9",
+          "status": "pending",
+          "changed": true,
+          "role": "tool"
+        },
+        {
+          "id": 10,
+          "name": "agent-10",
+          "status": "done",
+          "changed": false,
+          "role": "assistant"
+        },
+        {
+          "id": 11,
+          "name": "agent-11",
+          "status": "done",
+          "changed": true,
+          "role": "tool"
+        },
+        {
+          "id": 12,
+          "name": "agent-12",
+          "status": "done",
+          "changed": false,
+          "role": "tool"
+        },
+        {
+          "id": 13,
+          "name": "agent-13",
+          "status": "pending",
+          "changed": true,
+          "role": "assistant"
+        },
+        {
+          "id": 14,
+          "name": "agent-14",
+          "status": "done",
+          "changed": false,
+          "role": "tool"
+        },
+        {
+          "id": 15,
+          "name": "agent-15",
+          "status": "done",
+          "changed": true,
+          "role": "tool"
+        },
+        {
+          "id": 16,
+          "name": "agent-16",
+          "status": "done",
+          "changed": false,
+          "role": "assistant"
+        },
+        {
+          "id": 17,
+          "name": "agent-17",
+          "status": "pending",
+          "changed": true,
+          "role": "tool"
+        },
+        {
+          "id": 18,
+          "name": "agent-18",
+          "status": "done",
+          "changed": false,
+          "role": "tool"
+        },
+        {
+          "id": 19,
+          "name": "agent-19",
+          "status": "done",
+          "changed": true,
+          "role": "assistant"
+        },
+        {
+          "id": 20,
+          "name": "agent-20",
+          "status": "done",
+          "changed": false,
+          "role": "tool"
+        },
+        {
+          "id": 21,
+          "name": "agent-21",
+          "status": "pending",
+          "changed": true,
+          "role": "tool"
+        },
+        {
+          "id": 22,
+          "name": "agent-22",
+          "status": "done",
+          "changed": false,
+          "role": "assistant"
+        },
+        {
+          "id": 23,
+          "name": "agent-23",
+          "status": "done",
+          "changed": true,
+          "role": "tool"
+        },
+        {
+          "id": 24,
+          "name": "agent-24",
+          "status": "done",
+          "changed": false,
+          "role": "tool"
+        }
+      ]
+    }
+  },
+  {
+    "type": "request",
+    "task": 203,
+    "agent": "planner",
+    "metadata": {
+      "constraints": [
+        "🧩 validación UTF-8",
+        "backward compatible",
+        "sandbox safe"
+      ],
+      "details": {
+        "output": "Generate a reproducible benchmark without secrets",
+        "files": [
+          "src/agent.py",
+          "README.md"
+        ],
+        "status": "pending"
+      },
+      "milestones": [
+        {
+          "task": 10,
+          "status": "ok"
+        },
+        {
+          "task": 11,
+          "status": "pending"
+        },
+        {
+          "task": 12,
+          "status": "done"
+        }
+      ]
+    }
   }
 ]

@@ -11,6 +11,7 @@ NEXO remains experimental; items below are not promises or release claims.
 - Optional PyO3 adapter source code and independently installable SDK.
 - Persistent local on-disk attachment storage with SHA-256 verification.
 - Shared cross-language binary/text conformance fixture.
+- Explicit JSON capability handshake and safe fallback in the agent SDK.
 
 ## Next validation milestones
 

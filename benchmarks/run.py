@@ -14,7 +14,7 @@ from importlib.metadata import version
 import json
 from pathlib import Path
 
-from nexo import benchmark, compare_peer_formats
+from nexo import benchmark, compare_peer_formats, decode, encode, encode_binary
 
 
 def _compact_json(value):
@@ -36,6 +36,9 @@ def compare_corpus(corpus, tokenizer=None, toon=None, nexo_setup_tokens=0):
     results = []
     toon_supported = 0
     for index, obj in enumerate(corpus):
+        # Compare only lossless, reproducible representations.
+        if decode(encode(obj)) != obj or decode(encode_binary(obj)) != obj:
+            raise ValueError("NEXO failed to round-trip benchmark sample " + str(index))
         baseline = benchmark(obj, tokenizer=tokenizer)
         envelope = (
             compare_peer_formats(
@@ -46,7 +49,7 @@ def compare_corpus(corpus, tokenizer=None, toon=None, nexo_setup_tokens=0):
             "sample_index": index,
             "json_bytes": baseline["json_bytes"],
             "nexo_text_bytes": baseline["nexo_bytes"],
-            "nexo_binary_bytes": len(__import__("nexo").encode_binary(obj)),
+            "nexo_binary_bytes": len(encode_binary(obj)),
             "json_payload_tokens": baseline["json_tokens"],
             "nexo_payload_tokens": baseline["nexo_tokens"],
             "envelope": envelope,

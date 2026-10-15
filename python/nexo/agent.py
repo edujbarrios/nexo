@@ -14,7 +14,8 @@ from .negotiation import peer_supports_nexo
 
 AGENT_INSTRUCTIONS = (
     "Use the installed nexo Python library for messages to NEXO/1-capable peers. "
-    "Call nexo.AgentChannel(peer_supports_nexo=True, tokenizer=...) in the host; "
+    "Exchange nexo.advertise_capabilities() first, then initialize "
+    "nexo.AgentChannel.from_peer_capabilities(remote_offer, tokenizer=...) in the host; "
     "send messages with channel.send(data), decode with channel.receive(envelope). "
     "Do not ask an LLM to decode raw NEXO text. Fall back to JSON if the peer "
     "does not support NEXO or measured token counts do not improve. "
