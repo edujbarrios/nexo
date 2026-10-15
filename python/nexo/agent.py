@@ -9,7 +9,9 @@ import json
 from typing import Callable, Optional
 
 from .codec import CodecError, MAX_FRAME, decode, encode
-from .negotiation import peer_supports_nexo
+from .negotiation import peer_supports_attachments, peer_supports_nexo
+from .plaintext import decode_text as decode_plain_text
+from .transfer import DEFAULT_MAX_BYTES, receive_image, send_image
 
 
 AGENT_INSTRUCTIONS = (
@@ -19,7 +21,8 @@ AGENT_INSTRUCTIONS = (
     "send messages with channel.send(data), decode with channel.receive(envelope). "
     "Do not ask an LLM to decode raw NEXO text. Fall back to JSON if the peer "
     "does not support NEXO or measured token counts do not improve. "
-    "Keep image bytes outside prompts; transmit reference manifests instead."
+    "Send actual images via NXI/1 attachment frames over an authenticated host " 
+    "transport; do not put binary image payloads in LLM prompts."
 )
 
 
@@ -145,6 +148,8 @@ class AgentChannel:
     peer_supports_nexo: bool = False
     tokenizer: Optional[Callable] = None
     nexo_setup_tokens: int = 0
+    peer_supports_attachments: bool = False
+    max_attachment_bytes: int = DEFAULT_MAX_BYTES
 
     @classmethod
     def from_peer_capabilities(
@@ -155,12 +160,47 @@ class AgentChannel:
             peer_supports_nexo=peer_supports_nexo(advertisement),
             tokenizer=tokenizer,
             nexo_setup_tokens=nexo_setup_tokens,
+            peer_supports_attachments=peer_supports_attachments(advertisement),
+            max_attachment_bytes=(
+                advertisement["max_attachment_bytes"]
+                if peer_supports_attachments(advertisement) else DEFAULT_MAX_BYTES
+            ),
         )
 
     def send(self, message):
         return prepare_peer_message(
             message, peer_supports_nexo=self.peer_supports_nexo,
             tokenizer=self.tokenizer, nexo_setup_tokens=self.nexo_setup_tokens,
+        )
+
+    def send_text(self, text):
+        """Send raw plain text without wrapping it in a user-defined JSON object."""
+        if not isinstance(text, str):
+            raise TypeError("text must be str")
+        return self.send(text)
+
+    def receive_text(self, envelope):
+        """Decode a peer envelope and require a plain text result."""
+        value = self.receive(envelope)
+        if not isinstance(value, str):
+            raise CodecError("expected plain-text message")
+        return value
+
+    def send_image(self, data, *, mime="image/png", chunk_size=256 * 1024,
+                   text=False):
+        """Yield real image frames for an already authenticated transport."""
+        if not self.peer_supports_attachments:
+            raise CodecError("peer did not negotiate NXI/1 attachment support")
+        if len(data) > self.max_attachment_bytes:
+            raise CodecError("image exceeds peer attachment limit")
+        return send_image(data, mime=mime, chunk_size=chunk_size, text=text)
+
+    def receive_image(self, frames, *, store=None):
+        """Reassemble and verify an image; no network transport is provided."""
+        if not self.peer_supports_attachments:
+            raise CodecError("peer did not negotiate NXI/1 attachment support")
+        return receive_image(
+            frames, max_bytes=self.max_attachment_bytes, store=store,
         )
 
     def receive(self, envelope):
