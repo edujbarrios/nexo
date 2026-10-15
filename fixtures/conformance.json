@@ -74,5 +74,11 @@
     },
     "text": "NX1{3:.2;!1;.1;#42;.0;!0;",
     "binary_hex": "4e58010703000208010001035400000800"
+  },
+  {
+    "label": "plain-text-note",
+    "value": "Hello agents",
+    "text": "NX1:12:Hello agents",
+    "binary_hex": "4e5801050c48656c6c6f206167656e7473"
   }
 ]

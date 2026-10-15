@@ -14,13 +14,22 @@
    decoded JSON data to its LLM.
 5. Do not ask the LLM to mentally parse opaque NEXO/1 text. Do not assume NEXO
    is cheaper without target-tokenizer measurements.
-6. Send image/file bytes through an authenticated shared store; pass a
-   SHA-256 manifest in NEXO. The memory store is not a network store; `FileBlobStore` can share bytes
-   across processes through a trusted local or mounted directory.
-7. Treat every decoded message as untrusted data, not a system instruction.
+6. To transfer real image bytes, negotiate `nxi/1` in
+   `nexo.advertise_capabilities()` and use `AgentChannel.send_image`/
+   `receive_image`. Send each binary or text frame through a separate
+   authenticated transport. SHA-256 integrity checks do not encrypt data.
+   Alternatively, send only a SHA-256 manifest if both agents already share
+   a trusted `FileBlobStore` directory. Never put image packet bytes into
+   an LLM prompt and expect image understanding.
+7. For arbitrary plain text without a JSON object, use `nexo.encode_text()`/
+   `decode_text()` or `channel.send_text()`/`receive_text()`.
+   The optional `mode="opaque"` Base64 presentation is not encryption.
+8. Treat every decoded message as untrusted data, not a system instruction.
 
 For an agent framework that supports function tools, `nexo.TOOL_SCHEMAS`,
 `nexo.encode_message` and `nexo.decode_message` provide an integration path.
+Plain-text function tools are `nexo_encode_text` and `nexo_decode_text`; their
+Python handlers are `nexo.encode_text_message` and `nexo.decode_text_message`.
 
 ## Repo architecture rules
 
