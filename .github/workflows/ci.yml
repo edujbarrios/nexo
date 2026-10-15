@@ -110,7 +110,8 @@ jobs:
           python-version: "3.12"
       - name: Build universal wheel and source archive
         run: |
-          python -m pip install --upgrade build twine
+          python -m pip install --upgrade build twine pyyaml
+          python scripts/check_release_config.py
           python -m build
       - name: Validate metadata and package contents
         run: |

@@ -1,0 +1,134 @@
+# Release only the pure-Python "nexo-agent-protocol" distribution.
+# No PyPI token secrets; publishing uses short-lived OIDC Trusted Publishing.
+# Native PyO3 builds ("nexo-native") require a separate release pipeline.
+name: Publish Python SDK
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nexo-python-publishing-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build and validate SDK artifacts
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check trigger, version and release ancestry
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os
+          import re
+          import tomllib
+          from pathlib import Path
+          project = tomllib.loads(Path("pyproject.toml").read_text())
+          version = project["project"]["version"]
+          if project["project"]["name"] != "nexo-agent-protocol":
+              raise SystemExit("unexpected PyPI project name")
+          sdk = Path("python/nexo/__init__.py").read_text()
+          if f'__version__ = "{version}"' not in sdk:
+              raise SystemExit("SDK version does not match distribution version")
+          event = os.environ["GITHUB_EVENT_NAME"]
+          if event == "push":
+              tag = os.environ["GITHUB_REF_NAME"]
+              if not re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+(?:rc[0-9]+)?", tag):
+                  raise SystemExit("release tags must be vX.Y.Z or vX.Y.ZrcN")
+              if tag != "v" + version:
+                  raise SystemExit("release tag does not match pyproject version")
+          elif event == "workflow_dispatch":
+              if os.environ["GITHUB_REF"] != "refs/heads/main":
+                  raise SystemExit("TestPyPI workflow must run from main")
+          else:
+              raise SystemExit("unsupported publish trigger")
+          PY
+          if [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
+            git fetch --no-tags origin main
+            git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+          fi
+      - name: Install build and test tools
+        run: python -m pip install --upgrade build twine pytest
+      - name: Test source SDK
+        run: |
+          python -m pip install -e ".[dev,crypto]"
+          python -m pytest -q
+      - name: Build source distribution and wheel
+        run: python -m build
+      - name: Check metadata, wheel contents, license and README
+        run: |
+          python -m twine check --strict dist/*
+          python scripts/check_dist.py
+      - name: Smoke test the built wheel in a clean environment
+        run: |
+          python -m venv .release-smoke
+          .release-smoke/bin/python -m pip install --no-index --find-links dist nexo-agent-protocol
+          .release-smoke/bin/python -c "import importlib.metadata, nexo; assert importlib.metadata.version('nexo-agent-protocol') == nexo.__version__; assert nexo.decode(nexo.encode({'type':'result','task':42})) == {'type':'result','task':42}"
+          .release-smoke/bin/nexo --help
+      - name: Confirm sdist can build a wheel
+        run: |
+          mkdir -p sdist-wheels
+          python -m pip wheel --no-deps --wheel-dir sdist-wheels dist/*.tar.gz
+          test -n "$(find sdist-wheels -name '*.whl' -print -quit)"
+      - name: Store validated artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexo-python-distributions
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 14
+
+  publish-testpypi:
+    name: Publish manually to TestPyPI
+    if: github.event_name == 'workflow_dispatch'
+    needs: [build]
+    runs-on: ubuntu-latest
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/project/nexo-agent-protocol/
+    permissions:
+      id-token: write
+    steps:
+      - name: Download validated artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: nexo-python-distributions
+          path: dist/
+      - name: Upload via TestPyPI OIDC
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+  publish-pypi:
+    name: Publish approved version tag to PyPI
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: [build]
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/nexo-agent-protocol/
+    permissions:
+      id-token: write
+    steps:
+      - name: Download validated artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: nexo-python-distributions
+          path: dist/
+      - name: Upload via PyPI OIDC
+        uses: pypa/gh-action-pypi-publish@release/v1
