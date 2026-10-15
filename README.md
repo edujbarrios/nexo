@@ -161,6 +161,42 @@ separate types for capabilities, message envelopes, and image chunks.
 It does not implement retries, replay protection, concurrent multiplexed
 image transfers, or an agent identity registry.
 
+## Streaming large image files without loading them into RAM
+
+For file-backed images, use the **disk-streaming NXI/1 adapters**. They read
+the source in bounded chunks and calculate SHA-256 incrementally. The receiver
+writes to a private temporary file in a trusted directory, checks size and
+hash, then publishes the verified file under its digest name using an atomic
+no-overwrite filesystem link.
+
+```python
+from nexo import send_file, receive_file_to_directory
+
+frames = send_file("photo.png", mime="image/png", chunk_size=256 * 1024)
+result = receive_file_to_directory(
+    frames, "./received", image_only=True
+)
+print(result.path)      # received/<verified_sha256>
+print(result.manifest)  # size, mime, hash and content-addressed ref
+```
+
+With a negotiated NXF/1 socket session, use
+`session.send_image_file(path)` on the sender and
+`session.receive_image_to_directory(directory)` on the receiver
+instead of handling frames manually. See
+[the end-to-end socket example](examples/stream_image_file.py).
+
+This API does **not** place full image bytes in Python memory; it still reads
+each chunk, keeps a SHA-256 state, and requires trusted local disk capacity.
+The sender hashes the source once and reads it again to send, detecting
+changes that invalidate the hash. A repeated digest filename raises
+`FileExistsError` rather than overwriting existing content.
+An incomplete or corrupted transfer leaves **no published file**; use a
+context manager for cleanup of abandoned temporary transfers.
+
+Transport confidentiality still requires TLS and per-agent authorization.
+Storage and streaming do not change the image input cost of multimodal LLMs.
+
 ## Sending images between agents
 
 **NXI/1 actually transports the image bytes.** Unlike a shared-store
