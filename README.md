@@ -162,8 +162,7 @@ assert decode_nexo64(frame) == photo
 
 ### Real image encryption: NXE64/1 with AES-256-GCM
 
-Install the optional `crypto` extra (`python -m pip install '.[crypto]'` from
-this checkout). `NXE64/1:` wraps AES-256-GCM ciphertext and a fresh random
+Install the optional `crypto` extra (`python -m pip install 'nexo-agent-protocol[crypto]'` from PyPI, or `'.[crypto]'` from this checkout). `NXE64/1:` wraps AES-256-GCM ciphertext and a fresh random
 nonce in the NEXO64 alphabet. Its authentication tag detects tampering or an
 incorrect key. **The AES-GCM library provides the security, not the alphabet.**
 
@@ -415,12 +414,32 @@ echo '{"status":"ok","task":42,"type":"result"}' | python -m nexo inspect
 round-trip result is exact byte equality with the original input image;
 encrypted strings vary because every encryption uses a fresh nonce.
 
+## PyPI distribution and release policy
+
+Distribution: **`nexo-agent-protocol`**; Python import: **`nexo`**; CLI:
+**`nexo`**. Do not confuse this project with the separately owned `nexo`
+distribution on PyPI. The proposed new distribution name is **not reserved**
+until the maintainer registers/publishes it.
+
+A first `0.1.0` release is prepared but not yet uploaded. After GitHub
+Actions and PyPI Trusted Publishing have been configured, pushing an approved
+`v0.1.0` tag triggers the release workflow. See
+[PyPI publishing and TestPyPI instructions](docs/PUBLISHING.md).
+
+The pure-Python release does not need Rust. The optional `nexo-native` PyO3
+extension remains a **separate, unpublished distribution** until a
+cross-platform wheel release matrix and name ownership are validated.
+This source-available software retains its **noncommercial/no-derivatives**
+license on PyPI.
+
 ## Installation
 
-Python 3.9+. The default SDK needs no Rust compiler.
+Python 3.9+. The default SDK needs no Rust compiler. The PyPI distribution
+is `nexo-agent-protocol`; the import and CLI command remain `nexo`.
+The short PyPI distribution name `nexo` belongs to another project.
 
 ```sh
-python -m pip install "git+https://github.com/edujbarrios/nexo.git"
+python -m pip install nexo-agent-protocol
 ```
 
 Alternatively clone this repository and run `python -m pip install -e .`.

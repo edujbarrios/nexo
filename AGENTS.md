@@ -3,7 +3,7 @@
 ## How an agent uses NEXO
 
 1. Install the SDK in the **agent host**:
-   `pip install "git+https://github.com/edujbarrios/nexo.git"`.
+   `pip install nexo-agent-protocol`.
 2. Exchange `nexo.advertise_capabilities()` as authenticated JSON, then
    initialize `nexo.AgentChannel.from_peer_capabilities(remote_offer)`.
    Unknown versions safely fall back to JSON.
@@ -80,3 +80,10 @@ binary hex into LLM prompts and assume it will be natively compressed.
   interoperability. They are test data, not documentation-language choices.
 - Do not change wire-format bytes, dictionary IDs, or API names simply to
   translate explanations.
+
+## PyPI packaging and release policy
+
+- Publish the SDK under `nexo-agent-protocol` while retaining `import nexo`.
+- The PyPI distribution `nexo` is owned by a different maintainer.
+- Never trigger a release tag from a code PR or distribute private PyPI keys.
+- Follow `docs/PUBLISHING.md` and keep the restrictive license in artifacts.
