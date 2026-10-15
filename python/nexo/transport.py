@@ -73,10 +73,12 @@ class SocketFramedTransport:
             raise TypeError("context must be an SSLContext")
         if not context.check_hostname or context.verify_mode != ssl.CERT_REQUIRED:
             raise ValueError("TLS requires hostname and certificate verification")
-        with socket.create_connection((host, port), timeout=timeout) as raw:
+        raw = socket.create_connection((host, port), timeout=timeout)
+        try:
             secured = context.wrap_socket(raw, server_hostname=host)
-        # wrap_socket takes ownership of the descriptor, so the original raw
-        # context manager must NOT close it after a successful handshake.
+        except BaseException:
+            raw.close()
+            raise
         return cls(secured)
 
     def close(self):
