@@ -172,3 +172,55 @@ instead of `00`) and unsigned 64-bit overflow. This removes multiple
 byte spellings for the same integer value. The fixed rejection vectors
 in [fixtures/invalid_frames.json](../fixtures/invalid_frames.json) are
 tested by both Rust and Python.
+
+## Plain-text and opaque display formats
+
+NEXO/1 already supports a UTF-8 string at the top level; no JSON object is
+necessary. For example, `Hello agents` becomes `NX1:12:Hello agents`
+in text mode, or `4e5801050c48656c6c6f206167656e7473`
+in binary mode. The Python SDK exposes `encode_text` and
+`decode_text` to make this use case explicit.
+
+A convenience presentation `NXO1:` followed by RFC 4648-style
+URL-safe Base64 wraps a complete NEXO/1 binary frame. Decoding Base64 followed
+by the existing binary decoder restores the string. This display wrapper is
+**not encrypted or compressed**, and is never a substitute for TLS/AEAD.
+
+## NXI/1 attachment transport extension
+
+NXI/1 carries **actual binary file contents** in bounded chunks. It is
+separate from the NEXO/1 JSON-compatible value format; no NEXO/1 tags or
+dictionaries have been modified. Consumers must negotiate both NEXO support
+and the explicit `nxi/1` attachment capability.
+
+All binary packets start with four bytes `4e 58 49 01` (ASCII
+`NXI` plus binary version 1) followed by a one-byte kind:
+
+| Kind | Wire fields |
+|---|---|
+| `4d` (`M`) | `u32be(metadata_length)` + NEXO/1 binary metadata |
+| `44` (`D`) | `sha256_digest[32]` + `u32be(chunk_index)` + `u32be(data_length)` + raw chunk bytes |
+
+The metadata is a NEXO/1 binary object with exactly the fields
+`manifest`, `chunk_size`, and `chunk_count`.
+The manifest has exactly `ref`, `sha256`,
+`size`, and `mime`. Hashes use SHA-256 of the
+complete original file; `ref` is `sha256:<64 lowercase hex>`.
+The chunk count must equal ceiling(size / chunk_size). The final chunk may
+be shorter; no other packet may be. An empty file consists of metadata only.
+
+Implementations accept a maximum 4 KiB metadata object, 1 MiB data chunk,
+and by default 64 MiB per complete attachment. A receiver must reject extra,
+missing, duplicate, out-of-order, oversized, corrupted, or unknown-version
+packets. A transfer requires one dedicated receiver instance; interleaved
+transfers need independently managed sessions at the host transport layer.
+
+A text-only presentation starts with `NXI1:` plus standard
+Base64 of each complete binary packet. This is a presentation encoding
+only; it increases size and does not provide secrecy.
+
+**Security:** SHA-256 verifies unkeyed content integrity, not sender identity
+or authorization. Authenticate and encrypt the *external* transport.
+The SDK does not connect to remote hosts on its own and does not parse,
+render, or sanitize the transferred image pixels. Media decoding and
+multimodal model inputs remain the caller's responsibility.

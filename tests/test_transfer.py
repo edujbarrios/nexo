@@ -1,10 +1,7 @@
 """Plain-text and image-transfer conformance across host and CLI boundaries."""
 import base64
-import io
 import os
 from pathlib import Path
-import socket
-import struct
 import subprocess
 import sys
 import tempfile
@@ -178,7 +175,7 @@ class TestAttachmentTransfer(unittest.TestCase):
         with self.assertRaises(CodecError):
             receive_image(["NXI1:%%%"])
         with self.assertRaises(CodecError):
-            receive_image([b"WRONG"]) 
+            receive_image([b"WRONG"])
 
     def test_receivers_require_end_to_end_completion(self):
         rx = AttachmentReceiver()

@@ -231,7 +231,12 @@ def send_image(data, *, mime="image/png", chunk_size=DEFAULT_CHUNK, text=False):
 
 def receive_image(frames, *, max_bytes=DEFAULT_MAX_BYTES, store=None):
     """Return a verified ReceivedAttachment with raw image data."""
-    result = receive_attachment(frames, max_bytes=max_bytes, store=store)
+    # Reject non-image transfers before any optional persistence side effect.
+    result = receive_attachment(frames, max_bytes=max_bytes)
     if not result.manifest["mime"].lower().startswith("image/"):
         raise CodecError("received attachment is not an image")
+    if store is not None:
+        persisted = store.add(result.data, mime=result.manifest["mime"])
+        if persisted != result.manifest:
+            raise CodecError("attachment store manifest mismatch")
     return result

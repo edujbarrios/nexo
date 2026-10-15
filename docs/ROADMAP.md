@@ -12,6 +12,9 @@ NEXO remains experimental; items below are not promises or release claims.
 - Persistent local on-disk attachment storage with SHA-256 verification.
 - Shared cross-language binary/text conformance fixture.
 - Explicit JSON capability handshake and safe fallback in the agent SDK.
+- Plain-text NEXO/1 string API, CLI and explicitly non-encrypted opaque display.
+- NXI/1 image/file transmission with chunking, SHA-256 validation and explicit
+  capability negotiation, plus socket and text-only transport examples.
 
 ## Next validation milestones
 
@@ -32,8 +35,9 @@ NEXO remains experimental; items below are not promises or release claims.
 7. Include actual orchestration instructions, provider/tool framing and
    runtime billing in end-to-end token cost claims.
 8. ✅ Add shared adversarial wire fixtures, strict varint decoding and
-   seeded byte-mutation tests. Next: libFuzzer/cargo-fuzz coverage and a
-   secure remote blob-store adapter.
+   seeded byte-mutation tests. Added NXI/1 malformed/duplicate/truncated
+   media-packet coverage. Next: libFuzzer/cargo-fuzz coverage and a
+   secure authenticated remote blob-store/transport adapter.
 9. Study a tokenizer-oriented NEXO/2 text grammar or custom schema
    dictionaries **only** if independent measurements justify a version bump.
 
