@@ -1,0 +1,78 @@
+[
+  {
+    "label": "null",
+    "value": null,
+    "text": "NX1_",
+    "binary_hex": "4e580100"
+  },
+  {
+    "label": "false",
+    "value": false,
+    "text": "NX1-",
+    "binary_hex": "4e580101"
+  },
+  {
+    "label": "true",
+    "value": true,
+    "text": "NX1+",
+    "binary_hex": "4e580102"
+  },
+  {
+    "label": "zero",
+    "value": 0,
+    "text": "NX1#0;",
+    "binary_hex": "4e58010300"
+  },
+  {
+    "label": "negative-two",
+    "value": -2,
+    "text": "NX1#-2;",
+    "binary_hex": "4e58010303"
+  },
+  {
+    "label": "dictionary-value",
+    "value": "ok",
+    "text": "NX1!1;",
+    "binary_hex": "4e58010801"
+  },
+  {
+    "label": "utf8",
+    "value": "ñ🤖",
+    "text": "NX1:6:ñ🤖",
+    "binary_hex": "4e58010506c3b1f09fa496"
+  },
+  {
+    "label": "utf8-keyed-object",
+    "value": {
+      "name": "ñ🤖"
+    },
+    "text": "NX1{1:.5;:6:ñ🤖",
+    "binary_hex": "4e5801070100050506c3b1f09fa496"
+  },
+  {
+    "label": "array",
+    "value": [
+      null,
+      false,
+      42
+    ],
+    "text": "NX1[3:_-#42;",
+    "binary_hex": "4e5801060300010354"
+  },
+  {
+    "label": "float",
+    "value": 1.5,
+    "text": "NX1^1.5;",
+    "binary_hex": "4e5801043ff8000000000000"
+  },
+  {
+    "label": "result-object",
+    "value": {
+      "status": "ok",
+      "task": 42,
+      "type": "result"
+    },
+    "text": "NX1{3:.2;!1;.1;#42;.0;!0;",
+    "binary_hex": "4e58010703000208010001035400000800"
+  }
+]

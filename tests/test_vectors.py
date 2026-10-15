@@ -1,16 +1,26 @@
+"""Shared golden vectors consumed by Rust and the Python reference codec."""
+import json
+from pathlib import Path
 import unittest
+
 from nexo import decode, encode, encode_binary
 
-VALUE = {"status": "ok", "task": 42, "type": "result"}
-TEXT = "NX1{3:.2;!1;.1;#42;.0;!0;"
-BINARY = bytes.fromhex("4e58010703000208010001035400000800")
+
+FIXTURES = json.loads(
+    (Path(__file__).resolve().parents[1] / "fixtures" / "conformance.json").read_text(
+        encoding="utf-8",
+    )
+)
 
 
-class TestGoldenVector(unittest.TestCase):
-    def test_text(self):
-        self.assertEqual(encode(VALUE), TEXT)
-        self.assertEqual(decode(TEXT), VALUE)
-
-    def test_binary(self):
-        self.assertEqual(encode_binary(VALUE), BINARY)
-        self.assertEqual(decode(BINARY), VALUE)
+class GoldenVectors(unittest.TestCase):
+    def test_text_binary_reference_codec(self):
+        for item in FIXTURES:
+            with self.subTest(item=item["label"]):
+                value = item["value"]
+                text = item["text"]
+                binary = bytes.fromhex(item["binary_hex"])
+                self.assertEqual(encode(value), text)
+                self.assertEqual(encode_binary(value), binary)
+                self.assertEqual(decode(text), value)
+                self.assertEqual(decode(binary), value)
