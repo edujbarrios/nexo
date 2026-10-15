@@ -5,9 +5,10 @@
 1. Install the SDK in the **agent host**:
    `pip install "git+https://github.com/edujbarrios/nexo.git"`.
 2. Verify the receiver supports `nexo/1`. If not, send compact JSON.
-3. Call `nexo.prepare_peer_message(data, peer_supports_nexo=True, tokenizer=...)`
+3. Use `nexo.AgentChannel(peer_supports_nexo=True, tokenizer=...)` and call
+   `.send(data)`, or `nexo.prepare_peer_message(data, peer_supports_nexo=True, tokenizer=...)`
    to obtain a small envelope with `format` and `payload`.
-4. The receiver calls `nexo.parse_peer_message(envelope)` **before** passing
+4. The receiver calls `channel.receive(envelope)` or `nexo.parse_peer_message(envelope)` **before** passing
    decoded JSON data to its LLM.
 5. Do not ask the LLM to mentally parse opaque NEXO/1 text. Do not assume NEXO
    is cheaper without target-tokenizer measurements.

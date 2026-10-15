@@ -37,9 +37,22 @@ The **host application** calls the decoder. An arbitrary LLM cannot decode an
 opaque NEXO frame by itself. Send a NEXO frame only after the receiving agent
 has agreed it can decode `nexo/1`.
 
-The optional `tokenizer` argument takes a function that maps text to a list of
-model tokens. With one supplied, NEXO is used only when the encoded *payload*
-has fewer tokens than compact JSON; otherwise it transparently falls back.
+For reusable host integrations, the `AgentChannel` façade keeps peer capability,
+tokenizer and optional protocol setup overhead in one place:
+
+```python
+from nexo import AgentChannel
+
+channel = AgentChannel(peer_supports_nexo=True)
+outbound = channel.send({"type": "result", "task": 42})
+assert channel.receive(outbound) == {"type": "result", "task": 42}
+```
+
+The optional `tokenizer` argument takes a function mapping text to a token
+sequence. NEXO is selected only if the **entire serialized envelope** costs fewer
+tokens than the JSON envelope. If you know the extra protocol instruction cost,
+pass `nexo_setup_tokens` to account for it. The caller must still count actual
+provider/tool framing, repeated prompts and any visual tokens separately.
 
 ```python
 import tiktoken  # install optional extra: pip install ".[tokens]"
@@ -74,7 +87,8 @@ CLI: `python -m nexo encode`, `python -m nexo decode` and
 Run `python benchmarks/run.py` to compare payload byte sizes against compact
 JSON. Install the optional tokenizer extra, then run
 `python benchmarks/run.py --model gpt-4o` for tokenizer-specific payload
-counts. Results may show NEXO losing; they exclude orchestration overhead.
+counts. Results may show NEXO losing; envelope-aware figures still exclude actual LLM
+provider framing, tool schemas, and any model-instruction overhead not explicitly supplied.
 
 ## Images and files
 
