@@ -1,28 +1,30 @@
-# Publish NEXO to PyPI without GitHub Releases or tags
+# Automatic PyPI publishing for the NEXO Python SDK
 
-You can publish the pure-Python **`nexo-agent-protocol`** distribution directly
-from GitHub Actions. No GitHub Release, Git tag or permanent PyPI API token
-is necessary. Publishing runs **only on manual request** and uses PyPI
-Trusted Publishing (OIDC).
+NEXO publishes its **pure-Python** `nexo-agent-protocol` distribution through
+GitHub Actions **without creating a GitHub Release, tag or PyPI API token**.
+The production upload is attempted automatically when a new, unpublished
+package version is merged into `main`. The PyPI Trusted Publisher controls
+the actual upload, and the GitHub `pypi` environment can require approval.
 
-NEXO retains its restrictive
-[Attribution–NonCommercial–NoDerivatives license](../LICENSE). Publishing on
-PyPI does not change these conditions.
+The code is source-available under the restrictive
+[Attribution–NonCommercial–NoDerivatives license](../LICENSE).
+PyPI distribution does not change its permitted uses.
 
 ## Package identity
 
-- Distribution: `nexo-agent-protocol` (verify that you own or can register
-  this name on PyPI; pending publishers do not reserve it).
-- Import and CLI: `nexo`; `pip install nexo` is a different project.
-- Initial version: `0.1.0`, in `pyproject.toml` and
-  `python/nexo/__init__.py`.
-- Native `nexo-native` wheels are **not** included in this upload.
+- PyPI distribution: `nexo-agent-protocol` (must be registered to you or
+  available; pending publishers do **not** reserve the name).
+- Import/CLI: `nexo`; `pip install nexo` belongs to another project.
+- Initial version: `0.1.0` in `pyproject.toml` and the SDK's
+  `__version__`.
+- Optional `nexo-native` Rust extension is not part of this release.
+  It requires a separate multiplatform publishing pipeline.
 
-## 1. Configure the PyPI Trusted Publisher (once)
+## 1. Configure Trusted Publishing once
 
-On [PyPI Publishing](https://pypi.org/manage/account/publishing/),
-register a pending publisher for a new project or add it under your
-existing project:
+In [PyPI Publishing](https://pypi.org/manage/account/publishing/),
+register a **pending Trusted Publisher** if the project is new, or add a
+publisher to an existing project you control:
 
 | Field | Exact value |
 |---|---|
@@ -32,55 +34,94 @@ existing project:
 | Workflow filename | `release.yml` |
 | GitHub environment | `pypi` |
 
-In [GitHub Environments](https://github.com/edujbarrios/nexo/settings/environments)
-create or verify **`pypi`**. Recommended: configure required reviewer
-approval. **Important:** if deployment branch restrictions are enabled,
-allow **`main`**; this workflow is dispatched from main, **not from a tag**.
+Create/verify the matching environment under
+[GitHub Settings → Environments](https://github.com/edujbarrios/nexo/settings/environments).
+**Allow deployments from branch `main`** if branch restrictions are on.
+Protect that environment with required reviewers if you want a person to
+approve uploads before PyPI receives them. The release workflow's upload
+job requests short-lived OIDC credentials; it does not need secrets or a
+long-lived PyPI API token.
 
-For optional rehearsal using **TestPyPI**, independently register the same
-publisher there with environment `testpypi` and create that GitHub
-environment. TestPyPI and PyPI accounts are separate.
+For an optional dry run, separately configure TestPyPI with the same
+owner/repository/workflow but an environment `testpypi`. TestPyPI and
+production PyPI are independent registries.
 
-No `PYPI_API_TOKEN` GitHub secret is needed.
+## 2. How automatic publishing works
 
-## 2. Publish directly (without a release or tag)
+Merging changes to `main` affecting any of these paths starts
+[Publish Python SDK](https://github.com/edujbarrios/nexo/actions/workflows/release.yml):
 
-1. Go to **[Actions → Publish Python SDK](https://github.com/edujbarrios/nexo/actions/workflows/release.yml)**.
-2. Click **Run workflow** and choose branch **`main`**.
-3. Select **`pypi`** from the **`index`** dropdown. (Choose
-   `testpypi` for a dry run only if you configured its publisher too.)
-4. Click **Run workflow** to start.
-5. The `build` job runs tests, builds the wheel and source archive, checks
-   metadata and the LICENSE, and installs and validates the build.
-6. The **Publish manually to PyPI** job uploads the validated artifacts
-   using OIDC. If you protected the `pypi` environment, approve the job.
-7. Wait for the publishing **job** to succeed and verify
-   [the package on PyPI](https://pypi.org/project/nexo-agent-protocol/).
+- `python/**`: public Python SDK implementation;
+- `pyproject.toml`: package name, version and metadata;
+- `.github/workflows/release.yml`: publication workflow.
 
-A green build job alone does **not** confirm that PyPI accepted the upload.
-The action must have a Trusted Publisher matching the exact workflow and
-environment; the package name must be available or already yours.
+The workflow then:
 
-Once published:
+1. Verifies it is running against `main` and that the SDK version matches
+   the distribution version.
+2. Queries the **version-specific official PyPI JSON API**.
+   If that version already exists, **skips the upload**; a network/API
+   error (other than HTTP 404) **fails closed** rather than guessing.
+3. If the version is new, runs Python tests, builds the wheel and source
+   archive, checks their metadata/license, installs the built wheel in an
+   isolated environment, and rebuilds a wheel from the source archive.
+4. The production job obtains its own short-lived OIDC credential for
+   the dedicated `pypi` environment and attempts the upload.
+5. Check that **Publish new versions to PyPI** succeeds and confirm the
+   package's version on
+   [PyPI](https://pypi.org/project/nexo-agent-protocol/).
+
+**A green CI/build job does not prove publication.** PyPI still decides
+whether the Trusted Publisher is authorized and the chosen project name
+is available. With GitHub environment reviewers, publishing will pause
+for their approval.
+
+Subsequent pushes that do not change any of the paths above do not trigger
+publishing. A push that changes SDK code but **does not bump the version**
+will be skipped because PyPI releases are immutable.
+
+## 3. Publishing later versions
+
+For version `0.1.1` or higher:
+
+1. Change the version in both `pyproject.toml` and
+   `python/nexo/__init__.py`.
+2. Merge the tested changes into `main`.
+3. The workflow automatically checks PyPI and attempts the upload only
+   for the new version.
+
+**No GitHub Release or tag is required.**
+
+## 4. Optional manual retries or TestPyPI testing
+
+From [Actions → Publish Python SDK](https://github.com/edujbarrios/nexo/actions/workflows/release.yml),
+choose **Run workflow**, branch `main` and select the `index`:
+`pypi` for production or `testpypi` for the separate test registry.
+By default this is set to safer `testpypi`. Both choices use the same
+version-check safeguards and require their respective trusted publisher.
+
+## 5. Dynamic README badges
+
+The README uses the dynamic
+[PyPI version badge](https://img.shields.io/pypi/v/nexo-agent-protocol)
+and [supported Python versions badge](https://img.shields.io/pypi/pyversions/nexo-agent-protocol).
+After PyPI accepts a release, these badges **update automatically** from
+PyPI's public data; no GitHub commit, extra bot, PyPI password or workflow
+with write permissions is necessary. Badge caches may delay the displayed
+version briefly. Before the initial release, an unavailable-package status
+is expected. Don't hardcode success or a release version in the README.
+
+## 6. Verify or troubleshoot publication
+
+Production install, only after PyPI has accepted the upload:
 
 ```bash
-python -m pip install nexo-agent-protocol==0.1.0
+python -m pip install nexo-agent-protocol
 python -c "import nexo; print(nexo.__version__)"
 nexo --help
 ```
 
-**No GitHub Release, tag, push or merge triggers an upload.** Only the
-manual workflow dispatch with an explicit destination does.
-
-## 3. Publish subsequent versions
-
-PyPI does **not** permit overwriting files from an existing version.
-For each new upload, update `pyproject.toml` and the SDK's `__version__`
-together (for example `0.1.1`), merge the changes to `main`, then
-repeat **Actions → Publish Python SDK → Run workflow → pypi**.
-A GitHub Release is optional and unrelated.
-
-## 4. Validate locally if desired
+Build locally to examine artifacts:
 
 ```bash
 python -m pip install --upgrade build twine
@@ -89,25 +130,27 @@ python -m twine check --strict dist/*
 python scripts/check_dist.py
 ```
 
-The publishing workflow performs the same artifact validations and clean
-installation checks automatically.
+If publication is blocked:
 
-## Troubleshooting and security
+- **invalid-publisher:** confirm `edujbarrios/nexo`, the exact file
+  `release.yml`, and the environment `pypi` in the PyPI registration.
+- **Environment approval pending:** review/approve the `pypi` GitHub
+  deployment; GitHub branch restrictions must permit `main`.
+- **PyPI index unreachable:** the preflight fails and publishes nothing;
+  retry the manual workflow once network service recovers.
+- **Version already published:** this is normal; bump the version in both
+  files for the next release. PyPI files cannot be overwritten.
+- **Name unavailable/owned by someone else:** stop and select a different
+  distribution name, updating metadata, tests and the publisher together.
+- **Upload failed after build:** inspect the *publish* job logs, not only
+  the build result. Once the cause is corrected, use manual dispatch for
+  a retry of the unpublished version.
+- **Unexpected/bad published version:** yank it on PyPI, fix the code and
+  publish a new package version.
+- **Security:** protect `main`, review workflow and dependency changes,
+  keep `pypi` approval active where available, and secure the PyPI account
+  with 2FA. OIDC publishing grants real upload authority to this workflow.
 
-- **PyPI authentication error:** confirm project owner, repository,
-  `release.yml`, and `pypi` match the Trusted Publisher registration.
-- **GitHub deployment blocked:** allow branch `main` in the environment's
-  deployment restrictions rather than only tag patterns.
-- **Version already exists:** increment the package version; you cannot
-  republish the same files or version.
-- **Publishing job skipped:** choose `pypi`, not `testpypi`, and start the
-  manual workflow on `main`.
-- **PyPI name unavailable:** pick an available distribution name and update
-  the metadata, smoke tests, README, publishing workflow and Trusted
-  Publisher registration together.
-- **Incorrect published version:** yank it on PyPI, fix the code and publish
-  a new version. Artifacts are immutable.
-- **Security:** protect `main`, review any changes to `release.yml`, require
-  manual environment approval where possible, and maintain PyPI 2FA.
-
-See the [official PyPI Trusted Publishing guide](https://docs.pypi.org/trusted-publishers/using-a-publisher/).
+Official references:
+[PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/using-a-publisher/)
+and [GitHub OIDC for PyPI](https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-deployments/oidc-in-pypi).

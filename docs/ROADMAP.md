@@ -72,10 +72,16 @@ compressing image token billing, or teaching every LLM a new grammar.
   changing the import path, maintaining the custom restrictive license.
 - [x] Build wheel and sdist in CI, validate with Twine, test clean
   installation, and confirm the sdist builds a working wheel.
-- [x] Add a manual GitHub Actions workflow to choose PyPI or TestPyPI using
-  OIDC, with no GitHub Release or tag requirement.
+- [x] Automatically build and publish **new, unpublished** versions to
+  PyPI when SDK/package changes merge to `main`, with version-specific
+  registry checks, fail-closed network behavior and OIDC.
+- [x] Keep an optional manual PyPI/TestPyPI workflow for explicit retries
+  and dry runs, with no GitHub Release or tag requirement.
+- [x] Add live PyPI/Python badge URLs to README; they update automatically
+  after publication without a bot commit.
 - [ ] Verify maintainer-controlled PyPI/TestPyPI Trusted Publishers and
-  GitHub environment approvals for dispatch on branch `main`.
-- [ ] Publish the initial `0.1.0` wheel/sdist and verify it on PyPI.
+  GitHub environment approvals for publishing from branch `main`.
+- [ ] Publish the initial `0.1.0` wheel/sdist and verify it on PyPI;
+  document any outstanding OIDC/environment authorization failure.
 - [ ] Separately validate cross-platform native wheels for `nexo-native`,
   including distribution ownership, before automating its publication.
