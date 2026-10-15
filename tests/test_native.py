@@ -20,6 +20,7 @@ class NativeParity(unittest.TestCase):
                 value = item["value"]
                 expected_binary = bytes.fromhex(item["binary_hex"])
                 self.assertEqual(native.encode(value), item["text"])
+                self.assertIsInstance(native.encode_binary(value), bytes)
                 self.assertEqual(native.encode_binary(value), expected_binary)
                 self.assertEqual(native.decode(item["text"]), value)
                 self.assertEqual(native.decode(expected_binary), value)

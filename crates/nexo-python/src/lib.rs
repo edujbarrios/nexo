@@ -1,7 +1,7 @@
 //! Optional PyO3 adapter. The nexo-core crate owns the wire protocol.
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
-use pyo3::types::{PyAny, PyModule};
+use pyo3::types::{PyAny, PyBytes, PyModule};
 use serde_json::Value;
 
 fn json_input(py: Python<'_>, input: &Bound<'_, PyAny>) -> PyResult<Value> {
@@ -17,16 +17,20 @@ fn encode_text(py: Python<'_>, input: &Bound<'_, PyAny>) -> PyResult<String> {
 }
 
 #[pyfunction]
-fn encode_binary(py: Python<'_>, input: &Bound<'_, PyAny>) -> PyResult<Vec<u8>> {
-    nexo_core::encode_binary(&json_input(py, input)?)
-        .map_err(|e| PyValueError::new_err(e.to_string()))
+fn encode_binary<'py>(
+    py: Python<'py>,
+    input: &Bound<'py, PyAny>,
+) -> PyResult<Bound<'py, PyBytes>> {
+    let wire = nexo_core::encode_binary(&json_input(py, input)?)
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    Ok(PyBytes::new(py, &wire))
 }
 
 #[pyfunction]
 fn decode(py: Python<'_>, input: &Bound<'_, PyAny>) -> PyResult<PyObject> {
     let raw: Vec<u8> = match input.extract::<String>() {
         Ok(text) => text.into_bytes(),
-        Err(_) => input.extract::<Vec<u8>>()?,
+        Err(_) => input.downcast::<PyBytes>()?.as_bytes().to_vec(),
     };
     let value = nexo_core::decode(&raw).map_err(|e| PyValueError::new_err(e.to_string()))?;
     let json_text = serde_json::to_string(&value)

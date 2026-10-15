@@ -15,7 +15,8 @@ NEXO remains experimental; items below are not promises or release claims.
 ## Next validation milestones
 
 1. Green Rust and Python CI with cross-language golden vectors.
-2. Python/Rust behavioral and numerical parity tests for complex values.
+2. Python/Rust behavioral and numerical parity tests for complex values,
+   including exact Python `bytes` returns from PyO3 bindings.
 3. Build an optional native wheel and benchmark the speed against stdlib.
 4. Compare NEXO, compact JSON, TOON and alternatives on **real** agent
    message corpora with model-specific tokenizers.
