@@ -1,4 +1,4 @@
-"""Keep the NEXO wire explanation discoverable and truthful for new users."""
+"""Keep the README's English introduction clear and byte counts reproducible."""
 from pathlib import Path
 
 from nexo import decode, encode, encode_binary
@@ -9,9 +9,22 @@ README = ROOT / "README.md"
 
 def test_readme_explains_encoding_before_installation():
     text = README.read_text(encoding="utf-8")
-    assert text.index("## ¿Qué es NEXO y cómo funciona?") < text.index("## Installation")
-    assert "not encryption" in text
-    assert "bytes ≠ tokens" in text
+    assert text.index("## What is NEXO?") < text.index("## Installation")
+    assert "Encoding is not encryption." in text
+    assert "Byte savings are not LLM token savings" in text
+    assert "docs/PROTOCOL.md" in text
+
+
+def test_readme_uses_english_prose():
+    text = README.read_text(encoding="utf-8")
+    for old_spanish_text in (
+        "¿Qué es NEXO",
+        "Cuando dos agentes",
+        "Representación del ejemplo",
+        "¿Qué significan",
+        "Importante: bytes",
+    ):
+        assert old_spanish_text not in text
 
 
 def test_intro_example_exact_lengths():

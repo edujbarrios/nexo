@@ -1,99 +1,100 @@
 # NEXO
 
-**A compact, reversible language for communication between AI agents.**  
-**Un lenguaje de intercambio compacto y reversible para agentes de IA.**
+**A compact, reversible message encoding for cooperating AI agents.**
 
-> **NEXO is an encoding, not encryption.** It transforms structured messages
-> into shorter representations; anyone with the published decoder can recover
-> their contents. It does not provide secrecy, authentication or security.
+NEXO is an experimental serialization protocol for structured messages between
+AI-agent applications. It provides a dependency-free Python SDK and a separate
+Rust core. The agent's **host application** handles the encoding and decoding;
+the language model does not need to learn a new wire grammar.
 
-## ¿Qué es NEXO y cómo funciona?
+> **Encoding is not encryption.** NEXO does not hide the contents of a message.
+> Anyone with the protocol decoder can recover the original data. It provides
+> no secrecy, authentication, or authorization.
 
-Cuando dos agentes intercambian resultados, órdenes o estados, suelen enviar
-JSON con muchos nombres de campos y palabras repetidas. **NEXO/1** sustituye
-algunos de esos nombres y valores habituales por identificadores numéricos
-predefinidos; codifica números de forma compacta y conserva los textos
-desconocidos en UTF-8. El receptor reconstruye el mensaje original sin perder
-información. **No se necesita que el LLM conozca el formato**: la librería
-decodifica los mensajes dentro del proceso anfitrión del agente.
+## What is NEXO?
 
-Por ejemplo, este mensaje:
+Agents routinely exchange requests, tool results, status updates, and other
+structured data. Compact JSON works well but often repeats field names and
+common values. **NEXO/1** represents some frequent keys and string values with
+small, predefined dictionary IDs, encodes integers efficiently, and preserves
+unknown strings as length-prefixed UTF-8.
+
+The encoding is **lossless and reversible** for supported JSON-compatible
+values. Two compatible applications can reconstruct the same message without
+asking an LLM to parse the encoded form.
+
+### One message, three representations
+
+Take this compact JSON object:
 
 ```json
 {"status":"ok","task":42,"type":"result"}
 ```
 
-se puede representar de dos maneras:
-
-**NEXO Text** — para canales que solo admiten cadenas de texto:
+**NEXO Text** is designed for channels that require text:
 
 ```text
 NX1{3:.2;!1;.1;#42;.0;!0;
 ```
 
-**NEXO Binary** — para transporte entre procesos:
+**NEXO Binary** is designed for byte-oriented transport (shown in
+hexadecimal for readability):
 
 ```text
 4e 58 01 07 03 00 02 08 01 00 01 03 54 00 00 08 00
 ```
 
-| Representación del ejemplo | Tamaño |
+| Representation | Size for this example |
 |---|---:|
-| JSON compacto | **41 bytes** |
+| Compact JSON | **41 bytes** |
 | NEXO Text (UTF-8) | **25 bytes** |
 | NEXO Binary | **17 bytes** |
 
-Estos números corresponden **solo a este ejemplo**, no son un benchmark ni
-una promesa de ahorro universal.
+These are the sizes of **one illustrative message**, not measured average
+savings or a guarantee that NEXO will be smaller for other messages.
 
-### ¿Qué significan esos símbolos y bytes?
+### How the encoding works
 
-1. **Cabecera y versión:** `NX1` identifica texto NEXO/1;
-   `4e 58 01` identifica binario NEXO/1.
-2. **Estructura tipada:** `{3:` en texto y `07 03` en binario
-   indican un objeto con tres pares clave-valor.
-3. **Diccionarios de palabras:** en este ejemplo, el índice `02`
-   representa `status`, el índice `01` representa
-   `task` y el `00` representa `type`.
-   Los valores `ok` y `result` también tienen códigos.
-4. **Números compactos:** el número `42` se transforma mediante
-   ZigZag en `84` y se guarda en un varint: `54` en hexadecimal.
-5. **Contenido libre:** las cadenas que no están en el diccionario se
-   transmiten en UTF-8 con su longitud. Los diccionarios son fijos y
-   versionados, así que emisor y receptor deben usar la misma versión.
+1. **Identify the version.** Text frames start with `NX1`;
+   binary frames start with `4e 58 01`.
+2. **Write the data type and structure.** For the example, `{3:` in
+   text and `07 03` in binary mean an object with three key/value pairs.
+3. **Use versioned dictionaries.** Dictionary key IDs `02`,
+   `01`, and `00` stand for `status`,
+   `task`, and `type`. Common values such
+   as `ok` and `result` also have IDs.
+4. **Encode numbers efficiently.** Signed integers use ZigZag followed by
+   a variable-length integer (varint). In this example, `42` maps
+   to `84`, which fits in the single hexadecimal byte `54`.
+5. **Preserve arbitrary strings.** Strings without a dictionary entry are
+   stored as UTF-8 bytes preceded by their byte length. Both peers use
+   the same frozen V1 dictionaries and decoding rules.
 
-La [especificación NEXO/1](docs/PROTOCOL.md) documenta todos los tipos,
-etiquetas, diccionarios, varints, ZigZag y límites de seguridad, byte a byte.
-Para ver cómo se genera el ejemplo: `echo '{"status":"ok","task":42,"type":"result"}' | python -m nexo inspect`.
+See the [NEXO/1 protocol specification](docs/PROTOCOL.md) for the complete
+tag tables, dictionary IDs, ZigZag, varints, UTF-8 framing, and resource limits.
+To inspect both encodings yourself:
 
-### Importante: bytes ≠ tokens de IA
+```sh
+echo '{"status":"ok","task":42,"type":"result"}' | python -m nexo inspect
+```
 
-La representación binaria ahorra **bytes de transporte**; no se debe pegar
-su hexadecimal dentro del prompt esperando ahorrar tokens del modelo. NEXO
-Text puede reducir o aumentar los **tokens de contexto** según el tokenizador,
-el mensaje, el sobre de comunicación y las instrucciones adicionales. NEXO
-puede comparar el coste real de texto y utilizar JSON cuando sea preferible.
-Las imágenes se transmiten como bytes externos identificados por SHA-256,
-no como un supuesto «lenguaje visual encriptado».
+### Byte savings are not LLM token savings
 
-## How it works (English)
+Binary frames can save **transport bytes**, but putting their hexadecimal
+representation into an LLM prompt does not imply fewer model tokens. NEXO
+Text can use fewer *or more* context tokens than JSON, depending on the model
+tokenizer, message content, envelope, and additional instructions. When a
+tokenizer is supplied, the SDK compares complete serialized envelopes and
+falls back to JSON unless NEXO is cheaper on that measurement.
 
-NEXO/1 is a **versioned, lossless structured-message encoding**, not a cipher.
-It uses typed fields, frozen dictionaries for frequent keys and values,
-compact ZigZag/varint integers, and length-delimited UTF-8 for other strings.
-The same message can travel as a text frame (`NX1…`) or binary
-frame (`4e5801…`). A receiving agent's **host application** runs
-the decoder; the LLM itself does not need to interpret an opaque wire format.
+Images and large files should be sent through an authenticated external
+storage mechanism with SHA-256 references in messages; this does not reduce
+the token cost of interpreting an image with a multimodal model.
 
-**Optimization is measured, not assumed.** A smaller binary frame does not
-necessarily consume fewer model tokens. With a supplied target tokenizer,
-the Python SDK compares complete serialized message envelopes and falls
-back to compact JSON when NEXO is not a net improvement on that measure.
-Additional prompt/tool framing must be accounted for separately.
-
-> **Experimental v0.1.0.** No PyPI release or model-independent token-savings
-> claim. The project is **source-available under a restrictive
-> Attribution–NonCommercial–NoDerivatives license**, not OSI open source.
+> **Experimental v0.1.0.** No PyPI release or universal token-efficiency claim
+> has been established. Both peers must support the same protocol version.
+> NEXO is **source-available**, not OSI-approved open source. See the
+> [restrictive license](LICENSE) before using the code.
 
 ## Installation
 
@@ -244,7 +245,9 @@ Image understanding still requires a proper multimodal model input.
   reader, constants and error modules.
 - `crates/nexo-python/`: optional PyO3 binding layer.
 - `python/nexo/codec.py`: Python public facade with internal _wire/ codec modules.
-- `python/nexo/agent.py`: application-layer capability and cost strategy.
+- `python/nexo/agent.py`: agent-channel facade and token-cost strategy.
+- `python/nexo/negotiation.py`: explicit versioned capability negotiation.
+- `python/nexo/filesystem.py`: persistent, verified attachment storage.
 - `python/nexo/native.py`: optional Rust extension adapter.
 - `python/nexo/tools.py`: agent function-tool adapter.
 - `python/nexo/attachments.py`: content-addressed blob adapter.

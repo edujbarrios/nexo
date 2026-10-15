@@ -44,3 +44,12 @@ Run `echo '{"status":"ok","task":42,"type":"result"}' | python -m nexo inspect`
 to inspect text and binary wire bytes. Read `docs/PROTOCOL.md` for exact
 byte tags, varint/ZigZag encoding and frozen dictionaries. Do not send raw
 binary hex into LLM prompts and assume it will be natively compressed.
+
+## Repository language policy
+
+- Write all human-facing documentation, README sections, examples, CLI output,
+  logs, source comments, and test descriptions in **English**.
+- Preserve international Unicode samples used to test UTF-8 and protocol
+  interoperability. They are test data, not documentation-language choices.
+- Do not change wire-format bytes, dictionary IDs, or API names simply to
+  translate explanations.

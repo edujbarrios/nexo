@@ -11,3 +11,10 @@ Opening a GitHub pull request does not itself create an exception.
 
 Benchmarks should provide the corpus, JSON baseline, tokenizer identity and
 version, full message framing and both positive and negative results.
+
+## Documentation language
+
+Write README content, reference documentation, code comments, commit/PR
+summaries, example descriptions, and user-facing diagnostics in **English**.
+Non-English and Unicode strings are allowed in protocol conformance tests
+where they exercise UTF-8 behavior; do not translate or remove those vectors.
