@@ -4,6 +4,7 @@ from .attachments import MemoryBlobStore
 from .filesystem import FileBlobStore
 from .plaintext import encode_text, decode_text
 from .nexo64 import encode_nexo64, decode_nexo64, seal_nexo64, open_nexo64
+from .replay import ReplayGuard
 from .transport import AgentSocketSession, SocketFramedTransport
 from .disk_transfer import (
     FileAttachmentSender, FileAttachmentReceiver, ReceivedFile,
@@ -26,6 +27,7 @@ __all__ = [
     "advertise_capabilities", "peer_supports_nexo", "peer_supports_attachments",
     "encode_text", "decode_text", "send_image", "receive_image",
     "encode_nexo64", "decode_nexo64", "seal_nexo64", "open_nexo64",
+    "ReplayGuard",
     "send_attachment", "receive_attachment", "AttachmentSender",
     "AttachmentReceiver", "ReceivedAttachment",
     "prepare_peer_message", "parse_peer_message",
