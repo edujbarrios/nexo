@@ -11,6 +11,8 @@ import ssl
 import struct
 
 from .agent import AgentChannel
+from .disk_transfer import FileAttachmentSender, FileAttachmentReceiver
+from .transfer import _require_mime
 from .codec import CodecError, MAX_FRAME
 from .negotiation import advertise_capabilities, peer_supports_attachments
 from .transfer import (
@@ -256,6 +258,45 @@ class AgentSocketSession:
             if persisted != result.manifest:
                 raise CodecError("attachment store manifest mismatch")
         return result
+
+    def send_file(self, path, *, mime="application/octet-stream",
+                  chunk_size=DEFAULT_CHUNK):
+        """Send a local file without loading the entire file into memory."""
+        channel = self._channel()
+        if not channel.peer_supports_attachments:
+            raise CodecError("peer did not negotiate NXI/1 attachment support")
+        sender = FileAttachmentSender(
+            path, mime=mime, chunk_size=chunk_size,
+            max_bytes=channel.max_attachment_bytes,
+        )
+        for packet in sender.frames(text=False):
+            self.transport.send_media_packet(packet)
+
+    def send_image_file(self, path, *, mime="image/png",
+                        chunk_size=DEFAULT_CHUNK):
+        """Send image bytes directly from a local file path."""
+        _require_mime(mime)
+        if not mime.lower().startswith("image/"):
+            raise CodecError("expected image MIME type")
+        self.send_file(path, mime=mime, chunk_size=chunk_size)
+
+    def receive_file_to_directory(self, directory, *, image_only=False):
+        """Write a verified incoming attachment to a trusted local directory."""
+        self._channel()
+        if not peer_supports_attachments(self.local_capabilities):
+            raise CodecError("local agent did not advertise NXI/1 receive support")
+        with FileAttachmentReceiver(
+            directory, max_bytes=self.local_capabilities["max_attachment_bytes"]
+        ) as receiver:
+            while not receiver.complete:
+                receiver.accept(self.transport.receive_media_packet())
+            if image_only and not receiver._manifest["mime"].lower().startswith("image/"):
+                raise CodecError("received attachment is not an image")
+            return receiver.commit()
+
+    def receive_image_to_directory(self, directory):
+        """Save an image atomically after complete SHA-256 verification."""
+        return self.receive_file_to_directory(directory, image_only=True)
 
     def close(self):
         self.transport.close()

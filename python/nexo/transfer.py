@@ -130,6 +130,15 @@ class AttachmentReceiver:
         self._blob = bytearray()
         self.complete = False
 
+    def _current_size(self):
+        return len(self._blob)
+
+    def _write_part(self, part):
+        self._blob.extend(part)
+
+    def _finish(self):
+        verify_bytes(self._manifest, self._blob)
+
     def accept(self, frame):
         """Consume one packet; return True when the complete blob is verified."""
         if self.complete:
@@ -168,7 +177,7 @@ class AttachmentReceiver:
                 manifest, chunk_size, chunks
             )
             if chunks == 0:
-                verify_bytes(manifest, b"")
+                self._finish()
                 self.complete = True
             return self.complete
 
@@ -184,14 +193,14 @@ class AttachmentReceiver:
             raise CodecError("attachment digest mismatch")
         if index != self._received or index >= self._chunks:
             raise CodecError("out-of-order or duplicate attachment chunk")
-        remaining = self._manifest["size"] - len(self._blob)
+        remaining = self._manifest["size"] - self._current_size()
         expected = min(self._chunk_size, remaining)
         if length != expected or len(packet) != _CHUNK_HEADER + length:
             raise CodecError("invalid attachment chunk length")
-        self._blob.extend(packet[_CHUNK_HEADER:])
+        self._write_part(packet[_CHUNK_HEADER:])
         self._received += 1
         if self._received == self._chunks:
-            verify_bytes(self._manifest, self._blob)
+            self._finish()
             self.complete = True
         return self.complete
 

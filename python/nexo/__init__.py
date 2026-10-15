@@ -4,6 +4,10 @@ from .attachments import MemoryBlobStore
 from .filesystem import FileBlobStore
 from .plaintext import encode_text, decode_text
 from .transport import AgentSocketSession, SocketFramedTransport
+from .disk_transfer import (
+    FileAttachmentSender, FileAttachmentReceiver, ReceivedFile,
+    send_file, receive_file_to_directory,
+)
 from .transfer import (
     AttachmentSender, AttachmentReceiver, ReceivedAttachment,
     send_attachment, receive_attachment, send_image, receive_image,
@@ -14,7 +18,9 @@ from .negotiation import advertise_capabilities, peer_supports_nexo, peer_suppor
 
 __version__ = "0.1.0"
 __all__ = [
-    "Codec", "CodecError", "AgentSocketSession", "SocketFramedTransport", "MemoryBlobStore", "FileBlobStore", "TOOL_SCHEMAS",
+    "Codec", "CodecError", "AgentSocketSession", "SocketFramedTransport",
+    "FileAttachmentSender", "FileAttachmentReceiver", "ReceivedFile",
+    "send_file", "receive_file_to_directory", "MemoryBlobStore", "FileBlobStore", "TOOL_SCHEMAS",
     "AGENT_INSTRUCTIONS", "AgentChannel", "compare_peer_formats",
     "advertise_capabilities", "peer_supports_nexo", "peer_supports_attachments",
     "encode_text", "decode_text", "send_image", "receive_image",

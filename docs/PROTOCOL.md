@@ -283,3 +283,28 @@ image transfers but does not provide retries, disk spill, resumability,
 multi-attachment multiplexing or asynchronous networking. Remote deployment
 requires suitable connection lifetimes, timeouts, access controls and
 application-level error handling.
+
+
+### Disk-backed NXI/1 streaming adapters
+
+`FileAttachmentSender` reads a local file in bounded
+`chunk_size` blocks, first computing the full SHA-256 then
+emitting ordinary NXI/1 metadata and data frames. The sender checks its
+read-back hash and size so mutations during the transfer cannot silently
+produce a mismatched output.
+
+`FileAttachmentReceiver` processes the **same NXI/1 frame
+format** as the in-memory receiver, but appends chunks into a private
+temporary file. After verifying the exact advertised size and SHA-256, the
+caller invokes `commit()`. It creates the destination
+`<digest>` filename with an atomic exclusive hard link
+(no overwrite) inside a trusted root and removes the temporary file.
+Incomplete, corrupted, wrong-MIME and uncommitted transfers must not
+publish any output. On-disk paths are controlled by the receiver, never
+taken from sender filenames.
+
+The high-level `receive_file_to_directory(..., image_only=True)`
+helper and NXF/1 session's `receive_image_to_directory` use
+this strategy. The transport itself is still TLS-only for remote peers;
+SHA-256 alone is not sender authentication. Disk persistence and crash
+durability are separate concerns and require host filesystem policy.

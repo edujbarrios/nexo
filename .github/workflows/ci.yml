@@ -25,6 +25,7 @@ jobs:
       - run: python examples/plain_text.py
       - run: python examples/image_transfer.py
       - run: python examples/socket_session.py
+      - run: python examples/stream_image_file.py
       - run: python benchmarks/run.py
       - run: |
           printf 'Hello, agent' | python -m nexo encode-text | python -m nexo decode-text

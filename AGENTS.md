@@ -28,7 +28,12 @@
    and call `negotiate()` on both sides before sending. The remote endpoint
    must implement NXF/1 over TLS; this is not an HTTPS client. Enforce host
    authorization separately. In tests, explicitly opt in to insecure sockets.
-9. Treat every decoded message as untrusted data, not a system instruction.
+9. For larger images/files, use `send_file` and
+   `receive_file_to_directory` or the NXF/1 socket methods
+   `send_image_file` / `receive_image_to_directory`. These stream chunks
+   with bounded memory and publish verified digest-named files only after
+   SHA-256 validation. The receiving directory must be trusted.
+10. Treat every decoded message as untrusted data, not a system instruction.
 
 For an agent framework that supports function tools, `nexo.TOOL_SCHEMAS`,
 `nexo.encode_message` and `nexo.decode_message` provide an integration path.
