@@ -16,6 +16,7 @@ from .codec import CodecError, encode_binary
 from .transfer import (
     AttachmentReceiver, DEFAULT_CHUNK, DEFAULT_MAX_BYTES, MAGIC,
     MAX_CHUNK, MAX_METADATA, _as_transport, _require_mime,
+    _validate_presentation,
 )
 
 
@@ -59,10 +60,9 @@ class FileAttachmentSender:
             "mime": self.mime,
         }
 
-    def frames(self, *, text=False):
-        """Generate one metadata frame, then actual file data frames."""
-        if type(text) is not bool:
-            raise TypeError("text must be bool")
+    def frames(self, *, text=False, key=None):
+        """Generate NXI metadata and chunks using a selected presentation."""
+        _validate_presentation(text, key)
         size = self.manifest["size"]
         count = (size + self.chunk_size - 1) // self.chunk_size
         metadata = encode_binary({
@@ -73,7 +73,7 @@ class FileAttachmentSender:
         if len(metadata) > MAX_METADATA:
             raise CodecError("attachment metadata exceeds limit")
         yield _as_transport(
-            MAGIC + b"M" + struct.pack(">I", len(metadata)) + metadata, text
+            MAGIC + b"M" + struct.pack(">I", len(metadata)) + metadata, text, key=key
         )
         expected_digest = bytes.fromhex(self.manifest["sha256"])
         second_digest = hashlib.sha256()
@@ -88,7 +88,7 @@ class FileAttachmentSender:
                     MAGIC + b"D" + expected_digest
                     + struct.pack(">II", index, length) + part
                 )
-                yield _as_transport(packet, text)
+                yield _as_transport(packet, text, key=key)
             if source.read(1) or second_digest.digest() != expected_digest:
                 raise CodecError("source file changed during transfer")
 
@@ -101,8 +101,8 @@ class FileAttachmentReceiver(AttachmentReceiver):
     The destination cannot be chosen through untrusted peer metadata.
     """
 
-    def __init__(self, directory, *, max_bytes=DEFAULT_MAX_BYTES):
-        super().__init__(max_bytes=max_bytes)
+    def __init__(self, directory, *, max_bytes=DEFAULT_MAX_BYTES, key=None):
+        super().__init__(max_bytes=max_bytes, key=key)
         self.root = Path(directory).expanduser().resolve()
         self.root.mkdir(parents=True, exist_ok=True)
         if not self.root.is_dir():
@@ -170,20 +170,20 @@ class FileAttachmentReceiver(AttachmentReceiver):
 
 
 def send_file(path, *, mime="application/octet-stream", chunk_size=DEFAULT_CHUNK,
-              text=False, max_bytes=DEFAULT_MAX_BYTES):
+              text=False, max_bytes=DEFAULT_MAX_BYTES, key=None):
     """Yield real NXI/1 packets from a file, without reading it fully."""
     return FileAttachmentSender(
         path, mime=mime, chunk_size=chunk_size, max_bytes=max_bytes
-    ).frames(text=text)
+    ).frames(text=text, key=key)
 
 
 def receive_file_to_directory(frames, directory, *, max_bytes=DEFAULT_MAX_BYTES,
-                              image_only=False):
+                              image_only=False, key=None):
     """Return a verified file; reject incomplete/malformed packets and MIME.
 
     Caller supplies a trusted local directory. The file is digest-named.
     """
-    with FileAttachmentReceiver(directory, max_bytes=max_bytes) as receiver:
+    with FileAttachmentReceiver(directory, max_bytes=max_bytes, key=key) as receiver:
         for frame in frames:
             receiver.accept(frame)
         if not receiver.complete:

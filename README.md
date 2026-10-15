@@ -7,9 +7,10 @@ AI-agent applications. It provides a dependency-free Python SDK and a separate
 Rust core. The agent's **host application** handles the encoding and decoding;
 the language model does not need to learn a new wire grammar.
 
-> **Encoding is not encryption.** NEXO does not hide the contents of a message.
-> Anyone with the protocol decoder can recover the original data. It provides
-> no secrecy, authentication, or authorization.
+> **Encoding is not encryption.** NEXO/1, the legacy opaque display, and
+> NEXO64/1 are reversible encodings, not ciphers. Optional NXE64/1 is an
+> explicitly separate **AES-256-GCM authenticated encryption** format;
+> securely distributed keys and authenticated peers are still required.
 
 ## What is NEXO?
 
@@ -99,6 +100,69 @@ of interpreting an image with a multimodal model.
 > has been established. Both peers must support the same protocol version.
 > NEXO is **source-available**, not OSI-approved open source. See the
 > [restrictive license](LICENSE) before using the code.
+
+## NEXO64 image coding and authenticated encryption
+
+**NEXO64/1** is a new NEXO-specific 64-symbol representation of arbitrary bytes,
+including PNG, JPEG and WebP images. It uses a publicly specified permutation
+of Base64's six-bit alphabet, versioned `NX64/1:` framing and a CRC32 checksum.
+It is reversible, but **it is NOT encryption or compression**; binary transports
+remain smaller. The checksum detects accidents, not malicious changes.
+
+```python
+from pathlib import Path
+from nexo import encode_nexo64, decode_nexo64
+
+photo = Path("photo.png").read_bytes()
+frame = encode_nexo64(photo)             # NX64/1:...
+assert decode_nexo64(frame) == photo
+```
+
+### Real image encryption: NXE64/1 with AES-256-GCM
+
+Install the optional `crypto` extra (`python -m pip install '.[crypto]'` from
+this checkout). `NXE64/1:` wraps AES-256-GCM ciphertext and a fresh random
+nonce in the NEXO64 alphabet. Its authentication tag detects tampering or an
+incorrect key. **The AES-GCM library provides the security, not the alphabet.**
+
+```python
+import secrets
+from nexo import seal_nexo64, open_nexo64, send_image, receive_image
+
+key = secrets.token_bytes(32)  # provision independently; never put in a prompt
+encrypted_text = seal_nexo64(photo, key)  # NXE64/1:...
+assert open_nexo64(encrypted_text, key) == photo
+
+# Encrypt and authenticate each real NXI/1 image packet independently:
+packets = list(send_image(photo, text="encrypted", key=key))
+assert receive_image(packets, key=key).data == photo
+```
+
+Existing `NXI1:` Base64 and binary NXI/1 packet formats continue to work.
+For the new unencrypted presentation, use `send_image(photo, text="nexo64")`.
+For file-backed transfers, `send_file(path, text="encrypted", key=key)` and
+`receive_file_to_directory(..., key=key)` stream image data to verified disk.
+When a decryption key is supplied, NXI receivers refuse plaintext frames
+instead of silently downgrading the transfer.
+
+**Command line:**
+
+```bash
+python -m nexo encode64 < photo.png > photo.n64
+python -m nexo decode64 < photo.n64 > restored.png
+python -m nexo seal64 --key-file nexo.key < photo.png > photo.nxe64
+python -m nexo open64 --key-file nexo.key < photo.nxe64 > restored.png
+python -m nexo send-image --encoding nexo64 < photo.png > packets.txt
+python -m nexo receive-image < packets.txt > restored.png
+python -m nexo send-image --encoding encrypted --key-file nexo.key < photo.png > sealed.txt
+python -m nexo receive-image --key-file nexo.key < sealed.txt > restored.png
+```
+
+The key file must contain exactly **32 raw bytes** and must be created and
+distributed securely. Do not commit keys to Git or copy them into model
+prompts. AES-GCM detects tampering, but alone it does not stop an attacker
+from replaying an old valid message or establish peer identity. Use
+authenticated TLS, application authorization and replay controls.
 
 ## Plain-text messages (no JSON required)
 

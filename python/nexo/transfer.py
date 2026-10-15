@@ -13,6 +13,12 @@ import struct
 
 from .attachments import make_manifest, verify_bytes, verify_manifest
 from .codec import CodecError, decode, encode_binary
+from .nexo64 import (
+    ENCODE_PREFIX, ENCRYPTED_PREFIX, decode_nexo64, encode_nexo64,
+    open_nexo64, seal_nexo64,
+)
+
+_MEDIA_AAD = b"NXI/1"
 
 MAGIC = b"NXI\x01"
 TEXT_PREFIX = "NXI1:"
@@ -42,20 +48,35 @@ def _require_mime(mime):
     return mime
 
 
-def _packet_as_bytes(packet):
+def _packet_as_bytes(packet, *, key=None):
+    if key is not None and (
+        not isinstance(packet, str) or not packet.startswith(ENCRYPTED_PREFIX)
+    ):
+        raise CodecError("encrypted NXI/1 frame required; refusing plaintext downgrade")
     if isinstance(packet, str):
-        if not packet.startswith(TEXT_PREFIX):
-            raise CodecError("expected NXI1: text attachment frame")
-        body = packet[len(TEXT_PREFIX):]
-        # Bound base64 size before allocating decoded bytes.
-        if len(body) > ((MAX_CHUNK + _CHUNK_HEADER + MAX_METADATA + 2) // 3) * 4 + 4:
-            raise CodecError("attachment frame too large")
-        try:
-            packet = base64.b64decode(body, validate=True)
-        except (binascii.Error, ValueError, UnicodeError) as exc:
-            raise CodecError("invalid attachment base64") from exc
+        if packet.startswith(ENCRYPTED_PREFIX):
+            if key is None:
+                raise CodecError("encrypted frame requires a decryption key")
+            packet = open_nexo64(
+                packet, key, aad=_MEDIA_AAD,
+                max_bytes=MAX_CHUNK + _CHUNK_HEADER + MAX_METADATA,
+            )
+        elif packet.startswith(ENCODE_PREFIX):
+            packet = decode_nexo64(
+                packet, max_bytes=MAX_CHUNK + _CHUNK_HEADER + MAX_METADATA,
+            )
+        elif packet.startswith(TEXT_PREFIX):
+            body = packet[len(TEXT_PREFIX):]
+            if len(body) > ((MAX_CHUNK + _CHUNK_HEADER + MAX_METADATA + 2) // 3) * 4 + 4:
+                raise CodecError("attachment frame too large")
+            try:
+                packet = base64.b64decode(body, validate=True)
+            except (binascii.Error, ValueError, UnicodeError) as exc:
+                raise CodecError("invalid attachment base64") from exc
+        else:
+            raise CodecError("unknown attachment text frame version")
     if not isinstance(packet, bytes):
-        raise CodecError("expected bytes or NXI1: text frame")
+        raise CodecError("expected bytes or attachment text frame")
     if len(packet) > MAX_CHUNK + _CHUNK_HEADER + MAX_METADATA:
         raise CodecError("attachment frame too large")
     if not packet.startswith(MAGIC):
@@ -63,8 +84,26 @@ def _packet_as_bytes(packet):
     return packet
 
 
-def _as_transport(packet, text):
-    if text:
+def _validate_presentation(text, key):
+    if type(text) is bool:
+        if key is not None:
+            raise ValueError("encrypted transfers require text='encrypted'")
+    elif text == "nexo64":
+        if key is not None:
+            raise ValueError("encrypted transfers require text='encrypted'")
+    elif text == "encrypted":
+        if key is None:
+            raise ValueError("encrypted presentation requires an AES-256-GCM key")
+    else:
+        raise ValueError("text must be False, True, 'nexo64', or 'encrypted'")
+
+
+def _as_transport(packet, text, *, key=None):
+    if text == "encrypted":
+        return seal_nexo64(packet, key, aad=_MEDIA_AAD)
+    if text == "nexo64":
+        return encode_nexo64(packet)
+    if text is True:
         return TEXT_PREFIX + base64.b64encode(packet).decode("ascii")
     return packet
 
@@ -88,10 +127,9 @@ class AttachmentSender:
         self.manifest = make_manifest(data, _require_mime(mime))
         self.chunk_size = chunk_size
 
-    def frames(self, *, text=False):
-        """Yield packets in order; transport and peer authentication are external."""
-        if type(text) is not bool:
-            raise TypeError("text must be bool")
+    def frames(self, *, text=False, key=None):
+        """Yield binary, legacy Base64, NEXO64, or encrypted NXE64 packets."""
+        _validate_presentation(text, key)
         size = len(self._data)
         count = (size + self.chunk_size - 1) // self.chunk_size
         metadata = encode_binary({
@@ -101,7 +139,7 @@ class AttachmentSender:
         })
         if len(metadata) > MAX_METADATA:
             raise CodecError("attachment metadata exceeds limit")
-        yield _as_transport(MAGIC + b"M" + struct.pack(">I", len(metadata)) + metadata, text)
+        yield _as_transport(MAGIC + b"M" + struct.pack(">I", len(metadata)) + metadata, text, key=key)
         digest = bytes.fromhex(self.manifest["sha256"])
         for index in range(count):
             part = self._data[index * self.chunk_size:(index + 1) * self.chunk_size]
@@ -109,7 +147,7 @@ class AttachmentSender:
                 MAGIC + b"D" + digest
                 + struct.pack(">II", index, len(part)) + part
             )
-            yield _as_transport(packet, text)
+            yield _as_transport(packet, text, key=key)
 
 
 class AttachmentReceiver:
@@ -119,10 +157,11 @@ class AttachmentReceiver:
     For concurrent transfers, use a separate receiver instance per transfer.
     """
 
-    def __init__(self, *, max_bytes=DEFAULT_MAX_BYTES):
+    def __init__(self, *, max_bytes=DEFAULT_MAX_BYTES, key=None):
         if type(max_bytes) is not int or max_bytes < 0:
             raise ValueError("max_bytes must be nonnegative")
         self.max_bytes = max_bytes
+        self._key = key
         self._manifest = None
         self._chunk_size = None
         self._chunks = None
@@ -143,7 +182,7 @@ class AttachmentReceiver:
         """Consume one packet; return True when the complete blob is verified."""
         if self.complete:
             raise CodecError("attachment already complete")
-        packet = _packet_as_bytes(frame)
+        packet = _packet_as_bytes(frame, key=self._key)
         if len(packet) < 5:
             raise CodecError("truncated attachment packet")
         tag = packet[4:5]
@@ -212,14 +251,14 @@ class AttachmentReceiver:
 
 
 def send_attachment(data, *, mime="application/octet-stream",
-                    chunk_size=DEFAULT_CHUNK, text=False):
+                    chunk_size=DEFAULT_CHUNK, text=False, key=None):
     """Return an iterator of NXI/1 frames. Send each through your transport."""
-    return AttachmentSender(data, mime=mime, chunk_size=chunk_size).frames(text=text)
+    return AttachmentSender(data, mime=mime, chunk_size=chunk_size).frames(text=text, key=key)
 
 
-def receive_attachment(frames, *, max_bytes=DEFAULT_MAX_BYTES, store=None):
+def receive_attachment(frames, *, max_bytes=DEFAULT_MAX_BYTES, store=None, key=None):
     """Consume frames and verify the complete blob; optionally store it locally."""
-    receiver = AttachmentReceiver(max_bytes=max_bytes)
+    receiver = AttachmentReceiver(max_bytes=max_bytes, key=key)
     for packet in frames:
         receiver.accept(packet)
     result = receiver.result()
@@ -230,18 +269,18 @@ def receive_attachment(frames, *, max_bytes=DEFAULT_MAX_BYTES, store=None):
     return result
 
 
-def send_image(data, *, mime="image/png", chunk_size=DEFAULT_CHUNK, text=False):
+def send_image(data, *, mime="image/png", chunk_size=DEFAULT_CHUNK, text=False, key=None):
     """Transfer actual image bytes; the receiver must decode/render the image."""
     _require_mime(mime)
     if not mime.lower().startswith("image/"):
         raise CodecError("expected image MIME type")
-    return send_attachment(data, mime=mime, chunk_size=chunk_size, text=text)
+    return send_attachment(data, mime=mime, chunk_size=chunk_size, text=text, key=key)
 
 
-def receive_image(frames, *, max_bytes=DEFAULT_MAX_BYTES, store=None):
+def receive_image(frames, *, max_bytes=DEFAULT_MAX_BYTES, store=None, key=None):
     """Return a verified ReceivedAttachment with raw image data."""
     # Reject non-image transfers before any optional persistence side effect.
-    result = receive_attachment(frames, max_bytes=max_bytes)
+    result = receive_attachment(frames, max_bytes=max_bytes, key=key)
     if not result.manifest["mime"].lower().startswith("image/"):
         raise CodecError("received attachment is not an image")
     if store is not None:

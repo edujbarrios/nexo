@@ -25,6 +25,7 @@ nexo/
 │   ├── attachments.py         shared manifest/integrity logic + memory store
 │   ├── filesystem.py          persistent local blob adapter
 │   ├── plaintext.py           explicit string-message adapter
+│   ├── nexo64.py              custom 64-symbol codec and optional AES-GCM
 │   ├── transfer.py            separate chunked NXI/1 attachment transport
 │   ├── transport.py           bounded NXF/1 socket/TLS host-side adapter
 │   ├── disk_transfer.py       incremental hash + atomic file attachment sink

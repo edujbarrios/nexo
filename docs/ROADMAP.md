@@ -21,6 +21,10 @@ NEXO remains experimental; items below are not promises or release claims.
   duplicate-key rejection tests on local sockets.
 - Streaming file-source / disk-sink NXI/1 adapters to avoid loading the
   entire image into RAM; atomic publication after SHA-256 verification.
+- NEXO64/1 custom 64-symbol image-to-text alphabet with strict canonical
+  decoding, bounded frames, CRC32, and existing NXI/1 compatibility.
+- Optional NXE64/1 authenticated AES-256-GCM image-frame encryption,
+  randomized nonces, key/associated-data checks, and downgrade refusal.
 
 ## Next validation milestones
 
@@ -45,7 +49,10 @@ NEXO remains experimental; items below are not promises or release claims.
    media-packet coverage. Next: libFuzzer/cargo-fuzz coverage and a
    server-side authenticated transport integration and resumable transfers
    (streaming-to-disk memory bounds are now supported).
-9. Study a tokenizer-oriented NEXO/2 text grammar or custom schema
+9. Design authenticated key provisioning, replay prevention and key rotation
+   for long-lived encrypted agent sessions. Independently review the new
+   NXE64/1 envelope before describing it as production security.
+10. Study a tokenizer-oriented NEXO/2 text grammar or custom schema
    dictionaries **only** if independent measurements justify a version bump.
 
 ## Non-goals for v1
